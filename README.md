@@ -1,3 +1,3 @@
 # cpee-designer
 
-issues for designer
+issues & wiki for designer

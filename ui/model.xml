@@ -1,0 +1,35 @@
+<properties xmlns="http://riddl.org/ns/common-patterns/properties/1.0">
+  <attributes>
+    <info>Model</info>
+    <author></author>
+    <modeltype>CPEE</modeltype>
+    <theme>model</theme>
+    <status>model</status>
+  </attributes>
+  <state>ready</state>
+  <handlerwrapper>DefaultHandlerWrapper</handlerwrapper>
+  <positions/>
+  <dataelements/>
+  <endpoints>
+    <machine>machine</machine>
+    <sensor>sensor</sensor>
+    <human>human</human>
+    <subprocess>subprocess</subprocess>
+  </endpoints>
+  <dsl/>
+  <dslx>
+    <description xmlns="http://cpee.org/ns/description/1.0"/>
+  </dslx>
+  <status>
+    <id>0</id>
+    <message>undefined</message>
+  </status>
+  <description>
+    <description xmlns="http://cpee.org/ns/description/1.0"/>
+  </description>
+  <transformation>
+    <description type='copy'/>
+    <dataelements type='none'/>
+    <endpoints type='none'/>
+  </transformation>
+</properties>
