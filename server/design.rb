@@ -51,22 +51,30 @@ end
 
 class GetItem < Riddl::Implementation
   def response
-    name  = @r.last
-    insta = @a[0]
-    cock  = @a[1]
-    status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
-      Riddl::Parameter::Simple.new('behavior','fork_ready'),
-      Riddl::Parameter::Complex.new('xml','application/xml',File.read('testset.xml'))
-    ]
-    if status >= 200 && status < 300
-      inst = JSON::parse(result[0].value.read)
+    name   = File.basename(@r.last,'.xml')
+    insta  = @a[0]
+    cock   = @a[1]
+    active = @a[2]
+    inst   = if active[name]
+      { 'CPEE-INSTANCE-URL' => File.read(File.join('models',name + '.xml.active')) rescue nil }
+    else
+      status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
+        Riddl::Parameter::Simple.new('behavior','fork_ready'),
+        Riddl::Parameter::Complex.new('xml','application/xml',File.join('models',name + '.xml'))
+      ]
+      if status >= 200 && status < 300
+        JSON::parse(result[0].value.read)
+      else
+        nil
+      end
+    end
+    if inst.nil?
+      @status = 400
+    else
       insturl = inst['CPEE-INSTANCE-URL']
       @status = 302
       @headers << Riddl::Header.new('Location',cock + insturl)
-    else
-      @status = 400
     end
-
     nil
   end
 
@@ -74,12 +82,14 @@ end
 
 class PutItem < Riddl::Implementation
   def response
+    name  = File.basename(@r.last,'.xml')
     cont = @p[0].value.read
     XML::Smart.string(cont) do |doc|
       doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
       doc.find('/testset/attributes/p:author').each do |ele|
         ele.value = @h['DN'] + ' ' + @h['SN']
       end
+      File.write(File.join('models',name + '.xml'),doc.to_s)
     end
   end
 end
@@ -105,7 +115,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
     run GetList if get
     run Create if post 'name'
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-      run GetItem, @riddl_opts[:instantiate], @riddl_opts[:cockpit] if get
+      run GetItem, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
       run PutItem if put 'content'
       run Active, @riddl_opts[:active] if sse
     end
