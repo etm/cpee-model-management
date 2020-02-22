@@ -17,6 +17,7 @@
   </transformation>
   <attributes>
     <info xmlns="http://riddl.org/ns/common-patterns/properties/1.0">diana</info>
+    <creator xmlns="http://riddl.org/ns/common-patterns/properties/1.0">Juergen Mangler</creator>
     <author xmlns="http://riddl.org/ns/common-patterns/properties/1.0">Juergen Mangler</author>
     <modeltype xmlns="http://riddl.org/ns/common-patterns/properties/1.0">CPEE</modeltype>
     <theme xmlns="http://riddl.org/ns/common-patterns/properties/1.0">model</theme>

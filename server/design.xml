@@ -26,7 +26,7 @@
     <parameter name="list" mimetype="application/json"/>
   </message>
   <message name="content">
-    <parameter name="result" mimetype="application/xml"/>
+    <parameter name="content" mimetype="application/xml"/>
   </message>
 
   <resource>
@@ -35,6 +35,7 @@
     <sse/>
     <resource relative="[a-zA-Z0-9öäüÖÄÜ _-]+\.xml">
       <get/>
+      <delete/>
       <put in="content"/>
       <sse/>
     </resource>

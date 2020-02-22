@@ -25,7 +25,7 @@ require 'fileutils'
 class GetList < Riddl::Implementation
   def response
     names = Dir.glob(File.join(__dir__,'models','*.xml')).map do |f|
-      File.basename(f)
+      { :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :date => File.mtime(f).xmlschema }
     end
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
   end
@@ -35,17 +35,29 @@ class Create < Riddl::Implementation
   def response
     name = @p[0].value
     fname = File.join('models',name + '.xml')
+    counter = 0
+    while File.exists?(fname)
+      counter += 1
+      fname = File.join('models',name + counter.to_s + '.xml')
+    end
+
+    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
     FileUtils.cp('testset.xml',fname)
     XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
       doc.find('/testset/attributes/p:info').each do |ele|
-        ele.value = name
+        ele.text = File.basename(fname,'.xml')
+      end
+      doc.find('/testset/attributes/p:creator').each do |ele|
+        ele.text = dn['GN'] + ' ' + dn['SN']
       end
       doc.find('/testset/attributes/p:author').each do |ele|
-        ele.value = @h['DN'] + ' ' + @h['SN']
+        ele.text = dn['GN'] + ' ' + dn['SN']
       end
     end
-    Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
+    File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
+    File.write(fname + '.author',dn['GN'] + ' ' + dn['SN'])
+    nil
   end
 end
 
@@ -56,11 +68,11 @@ class GetItem < Riddl::Implementation
     cock   = @a[1]
     active = @a[2]
     inst   = if active[name]
-      { 'CPEE-INSTANCE-URL' => File.read(File.join('models',name + '.xml.active')) rescue nil }
+      { 'CPEE-INSTANCE-URL' => File.read(File.join('models',name + '.xml.active')) } rescue nil
     else
       status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
         Riddl::Parameter::Simple.new('behavior','fork_ready'),
-        Riddl::Parameter::Complex.new('xml','application/xml',File.join('models',name + '.xml'))
+        Riddl::Parameter::Complex.new('xml','application/xml',File.read(File.join('models',name + '.xml')))
       ]
       if status >= 200 && status < 300
         JSON::parse(result[0].value.read)
@@ -84,13 +96,29 @@ class PutItem < Riddl::Implementation
   def response
     name  = File.basename(@r.last,'.xml')
     cont = @p[0].value.read
+    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
     XML::Smart.string(cont) do |doc|
       doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
+      unless File.exists?(File.join('models',name + '.xml.creator'))
+        doc.find('/testset/attributes/p:author').each do |ele|
+          File.write(File.join('models',name + '.xml.creator'),ele.text)
+        end
+      end
       doc.find('/testset/attributes/p:author').each do |ele|
-        ele.value = @h['DN'] + ' ' + @h['SN']
+        ele.text = dn['GN'] + ' ' + dn['SN']
       end
       File.write(File.join('models',name + '.xml'),doc.to_s)
+      File.write(File.join('models',name + '.xml.author'),dn['GN'] + ' ' + dn['SN'])
     end
+  end
+end
+
+class DeleteItem < Riddl::Implementation
+  def response
+    name  = File.basename(@r.last,'.xml')
+    File.delete(File.join('models',name + '.xml'))
+    File.delete(File.join('models',name + '.xml.author'))
+    File.delete(File.join('models',name + '.xml.creator'))
   end
 end
 
@@ -115,6 +143,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
     run GetList if get
     run Create if post 'name'
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
+      run DeleteItem if delete
       run GetItem, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
       run PutItem if put 'content'
       run Active, @riddl_opts[:active] if sse
