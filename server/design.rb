@@ -31,6 +31,35 @@ class GetList < Riddl::Implementation
   end
 end
 
+class RenameItem < Riddl::Implementation
+  def response
+    name  = File.basename(@r.last,'.xml')
+    nname = @p[0].value
+    fnname = File.join('models',nname + '.xml')
+    counter = 0
+    while File.exists?(fnname)
+      counter += 1
+      fnname = File.join('models',nname + counter.to_s + '.xml')
+    end
+
+    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
+    creator = dn['GN'] + ' ' + dn['SN']
+    FileUtils.cp(File.join('models',name + '.xml'),fnname)
+    XML::Smart::modify(fnname) do |doc|
+      doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
+      creator = doc.find('string(/testset/attributes/p:creator)')
+      doc.find('/testset/attributes/p:info').each do |ele|
+        ele.text = File.basename(fnname,'.xml')
+      end
+      doc.find('/testset/attributes/p:author').each do |ele|
+        ele.text = dn['GN'] + ' ' + dn['SN']
+      end
+    end
+    File.write(fnname + '.creator',creator)
+    File.write(fnname + '.author',dn['GN'] + ' ' + dn['SN'])
+    nil
+  end
+end
 class Create < Riddl::Implementation
   def response
     name = @p[0].value
@@ -146,6 +175,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
       run DeleteItem if delete
       run GetItem, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
       run PutItem if put 'content'
+      run RenameItem if put 'name'
       run Active, @riddl_opts[:active] if sse
     end
   end

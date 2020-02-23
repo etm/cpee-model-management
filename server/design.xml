@@ -37,6 +37,7 @@
       <get/>
       <delete/>
       <put in="content"/>
+      <put in="name"/>
       <sse/>
     </resource>
   </resource>

@@ -1,3 +1,22 @@
+function rename_it(name) {
+  var newname;
+  if (newname = prompt('New name please!')) {
+    $.ajax({
+      type: "PUT",
+      url: "server/" + name,
+      data: { new: newname },
+      success: function(res) {
+        $.ajax({
+          type: "DELETE",
+          url: "server/" + name,
+          success: function(res) {
+            location.reload();
+          }
+        });
+      }
+    });
+  }
+}
 function delete_it(name) {
   if (confirm('Are you really, really, REALLY sure!')) {
     $.ajax({
@@ -27,6 +46,7 @@ $(document).ready(function() {
           $('[data-class=author]',clone).text(data['author']);
           $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
           $('[data-class=delete] a',clone).attr('href','javascript:delete_it("' + data['name'] +'");');
+          $('[data-class=rename] a',clone).attr('href','javascript:rename_it("' + data['name'] +'");');
           $('#models').append(clone);
         });
       }
