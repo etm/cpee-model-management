@@ -1,6 +1,6 @@
 function rename_it(name) {
   var newname;
-  if (newname = prompt('New name please!')) {
+  if (newname = prompt('New name please!',name.replace(/\.xml$/,''))) {
     $.ajax({
       type: "PUT",
       url: "server/" + name,
@@ -19,7 +19,7 @@ function rename_it(name) {
 }
 function duplicate_it(name) {
   var newname;
-  if (newname = prompt('New name please!')) {
+  if (newname = prompt('New name please!',name.replace(/\.xml$/,''))) {
     $.ajax({
       type: "POST",
       url: "server/",
