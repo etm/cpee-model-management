@@ -17,6 +17,17 @@ function rename_it(name) {
     });
   }
 }
+function duplicate_it(name) {
+  var newname;
+  if (newname = prompt('New name please!')) {
+    $.ajax({
+      type: "POST",
+      url: "server/",
+      data: { new: newname, old: name },
+      success: function() { location.reload(); },
+    });
+  }
+}
 function delete_it(name) {
   if (confirm('Are you really, really, REALLY sure!')) {
     $.ajax({
@@ -47,6 +58,7 @@ $(document).ready(function() {
           $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
           $('[data-class=delete] a',clone).attr('href','javascript:delete_it("' + data['name'] +'");');
           $('[data-class=rename] a',clone).attr('href','javascript:rename_it("' + data['name'] +'");');
+          $('[data-class=duplicate] a',clone).attr('href','javascript:duplicate_it("' + data['name'] +'");');
           $('#models').append(clone);
         });
       }

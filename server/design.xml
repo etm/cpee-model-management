@@ -22,6 +22,14 @@
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
     </parameter>
   </message>
+  <message name="duplicate">
+    <parameter name="new" type="string">
+      <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
+    </parameter>
+    <parameter name="old" type="string">
+      <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+\.xml</param>
+    </parameter>
+  </message>
   <message name="list">
     <parameter name="list" mimetype="application/json"/>
   </message>
@@ -31,6 +39,7 @@
 
   <resource>
     <post in="name"/>
+    <post in="duplicate"/>
     <get out="list"/>
     <sse/>
     <resource relative="[a-zA-Z0-9öäüÖÄÜ _-]+\.xml">

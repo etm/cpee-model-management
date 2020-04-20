@@ -24,7 +24,7 @@ require 'fileutils'
 
 class GetList < Riddl::Implementation
   def response
-    names = Dir.glob(File.join(__dir__,'models','*.xml')).map do |f|
+    names = Dir.glob(File.join('models','*.xml')).map do |f|
       { :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :date => File.mtime(f).xmlschema }
     end
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -63,6 +63,7 @@ end
 class Create < Riddl::Implementation
   def response
     name = @p[0].value
+    tname = @p[1] ? File.join('models',@p[1].value) : 'testset.xml'
     fname = File.join('models',name + '.xml')
     counter = 0
     while File.exists?(fname)
@@ -71,7 +72,9 @@ class Create < Riddl::Implementation
     end
 
     dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
-    FileUtils.cp('testset.xml',fname)
+    p tname
+    p fname
+    FileUtils.cp(tname,fname)
     XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
       doc.find('/testset/attributes/p:info').each do |ele|
@@ -109,6 +112,7 @@ class GetItem < Riddl::Implementation
         nil
       end
     end
+    p active[name]
     if inst.nil?
       @status = 400
     else
@@ -162,7 +166,7 @@ class Active < Riddl::SSEImplementation
   end
 end
 
-server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost', :port => 9316) do |opts|
+server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost') do |opts|
   accessible_description true
   cross_site_xhr true
 
@@ -171,6 +175,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
   on resource do
     run GetList if get
     run Create if post 'name'
+    run Create if post 'duplicate'
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
       run DeleteItem if delete
       run GetItem, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
