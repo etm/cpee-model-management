@@ -72,8 +72,6 @@ class Create < Riddl::Implementation
     end
 
     dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
-    p tname
-    p fname
     FileUtils.cp(tname,fname)
     XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
@@ -112,7 +110,6 @@ class GetItem < Riddl::Implementation
         nil
       end
     end
-    p active[name]
     if inst.nil?
       @status = 400
     else
