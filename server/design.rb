@@ -103,8 +103,8 @@ class GetItem < Riddl::Implementation
       status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
         Riddl::Parameter::Simple.new('behavior','fork_ready'),
         Riddl::Parameter::Complex.new('xml','application/xml',File.read(File.join('models',name + '.xml')))
-      ]
-      if status >= 200 && status < 300
+      ] rescue nil
+      if status && status >= 200 && status < 300
         JSON::parse(result[0].value.read)
       else
         nil
@@ -112,6 +112,7 @@ class GetItem < Riddl::Implementation
     end
     if inst.nil?
       @status = 400
+      return Riddl::Parameter::Complex.new('nope','text/plain','No longer exists.')
     else
       insturl = inst['CPEE-INSTANCE-URL']
       @status = 302
