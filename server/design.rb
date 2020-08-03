@@ -27,6 +27,7 @@ class GetList < Riddl::Implementation
     names = Dir.glob(File.join('models','*.xml')).map do |f|
       { :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :date => File.mtime(f).xmlschema }
     end
+    names.sort_by!{ |e| e[:name] }
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
   end
 end
