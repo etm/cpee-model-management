@@ -47,12 +47,12 @@ class RenameItem < Riddl::Implementation
     creator = dn['GN'] + ' ' + dn['SN']
     FileUtils.cp(File.join('models',name + '.xml'),fnname)
     XML::Smart::modify(fnname) do |doc|
-      doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
-      creator = doc.find('string(/testset/attributes/p:creator)')
+      doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
+      creator = doc.find('string(/p:testset/p:attributes/p:creator)')
       doc.find('/testset/attributes/p:info').each do |ele|
         ele.text = File.basename(fnname,'.xml')
       end
-      doc.find('/testset/attributes/p:author').each do |ele|
+      doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
     end
@@ -75,14 +75,14 @@ class Create < Riddl::Implementation
     dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
     FileUtils.cp(tname,fname)
     XML::Smart::modify(fname) do |doc|
-      doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
-      doc.find('/testset/attributes/p:info').each do |ele|
+      doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
+      doc.find('/p:testset/p:attributes/p:info').each do |ele|
         ele.text = File.basename(fname,'.xml')
       end
-      doc.find('/testset/attributes/p:creator').each do |ele|
+      doc.find('/p:testset/p:attributes/p:creator').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
-      doc.find('/testset/attributes/p:author').each do |ele|
+      doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
     end
@@ -130,13 +130,13 @@ class PutItem < Riddl::Implementation
     cont = @p[0].value.read
     dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
     XML::Smart.string(cont) do |doc|
-      doc.register_namespace 'p', 'http://riddl.org/ns/common-patterns/properties/1.0'
+      doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       unless File.exists?(File.join('models',name + '.xml.creator'))
-        doc.find('/testset/attributes/p:author').each do |ele|
+        doc.find('/p:testset/p:attributes/p:author').each do |ele|
           File.write(File.join('models',name + '.xml.creator'),ele.text)
         end
       end
-      doc.find('/testset/attributes/p:author').each do |ele|
+      doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
       File.write(File.join('models',name + '.xml'),doc.to_s)
