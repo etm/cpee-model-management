@@ -43,6 +43,7 @@ function delete_it(name) {
 $(document).ready(function() {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
+  $('input[name=type]').val(urlParams.get('type') || 'draft');
   var def = new $.Deferred();
   def.done(function(){
     $.ajax({
@@ -72,7 +73,7 @@ $(document).ready(function() {
       success: function() { def.resolve(); },
       error: function() { def.reject(); }
     });
-    history.pushState({}, document.title, window.location.pathname);
+    history.pushState({}, document.title, window.location.pathname + '?type=' + urlParams.get('type') || 'draft');
   } else {
     def.resolve();
   }
