@@ -43,12 +43,13 @@ function delete_it(name) {
 $(document).ready(function() {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-  $('input[name=type]').val(urlParams.get('type') || 'draft');
+  $('input[name=stage]').val(urlParams.get('stage') || 'draft');
   var def = new $.Deferred();
   def.done(function(){
     $.ajax({
       type: "GET",
       url: "server/",
+      data: { stage: urlParams.get('stage') || 'draft' },
       success: function(res) {
         $(res).each(function(k,data) {
           var clone = document.importNode(document.querySelector('#line').content,true);
@@ -69,11 +70,11 @@ $(document).ready(function() {
     $.ajax({
       type: "POST",
       url: "server/",
-      data: { new: urlParams.get('new') },
+      data: { stage: urlParams.get('stage'), new: urlParams.get('new') },
       success: function() { def.resolve(); },
       error: function() { def.reject(); }
     });
-    history.pushState({}, document.title, window.location.pathname + '?type=' + urlParams.get('type') || 'draft');
+    history.pushState({}, document.title, window.location.pathname + '?stage=' + urlParams.get('stage') || 'draft');
   } else {
     def.resolve();
   }

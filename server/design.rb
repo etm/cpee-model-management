@@ -24,11 +24,12 @@ require 'fileutils'
 
 class GetList < Riddl::Implementation
   def response
+    stage = @p[0].value
     names = Dir.glob(File.join('models','*.xml')).map do |f|
-      { :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :date => File.mtime(f).xmlschema }
-    end
-    names.sort_by!{ |e| e[:name] }
-    Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
+      { :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :date => File.mtime(f).xmlschema } if (File.read(f + '.stage').strip rescue nil) == stage
+    end.compact
+
+    Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names.uniq.sort_by{ |e| e[:name] }))
   end
 end
 
@@ -38,6 +39,7 @@ class RenameItem < Riddl::Implementation
     nname = @p[0].value
     fnname = File.join('models',nname + '.xml')
     counter = 0
+    stage = 'draft'
     while File.exists?(fnname)
       counter += 1
       fnname = File.join('models',nname + counter.to_s + '.xml')
@@ -55,17 +57,25 @@ class RenameItem < Riddl::Implementation
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
+      stage = doc.find('string(/p:testset/p:attributes/p:design-stage)').sub(/^$/,'draft')
     end
     File.write(fnname + '.creator',creator)
     File.write(fnname + '.author',dn['GN'] + ' ' + dn['SN'])
+    File.write(fnname + '.stage',stage)
     nil
   end
 end
 class Create < Riddl::Implementation
   def response
+    stage = if @a[0] == :cre
+      @p.shift.value
+    else
+      nil
+    end
     name = @p[0].value
     tname = @p[1] ? File.join('models',@p[1].value) : 'testset.xml'
     fname = File.join('models',name + '.xml')
+    stage = 'draft'
     counter = 0
     while File.exists?(fname)
       counter += 1
@@ -85,9 +95,17 @@ class Create < Riddl::Implementation
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
+      if stage
+        doc.find('/p:testset/p:attributes/p:design-stage').each do |ele|
+          ele.text = stage
+        end
+      else
+        stage = doc.find('string(/p:testset/p:attributes/p:design-stage)').sub(/^$/,'draft')
+      end
     end
     File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
     File.write(fname + '.author',dn['GN'] + ' ' + dn['SN'])
+    File.write(fname + '.stage',stage)
     nil
   end
 end
@@ -141,6 +159,7 @@ class PutItem < Riddl::Implementation
       end
       File.write(File.join('models',name + '.xml'),doc.to_s)
       File.write(File.join('models',name + '.xml.author'),dn['GN'] + ' ' + dn['SN'])
+      File.write(File.join('models',name + '.xml.stage'),doc.find('string(/p:testset/p:attributes/p:design-stage)').sub(/^$/,'draft'))
     end
   end
 end
@@ -151,6 +170,7 @@ class DeleteItem < Riddl::Implementation
     File.delete(File.join('models',name + '.xml'))
     File.delete(File.join('models',name + '.xml.author'))
     File.delete(File.join('models',name + '.xml.creator'))
+    File.delete(File.join('models',name + '.xml.stage'))
   end
 end
 
@@ -172,9 +192,9 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
   @riddl_opts[:active] = {}
 
   on resource do
-    run GetList if get
-    run Create if post 'name'
-    run Create if post 'duplicate'
+    run GetList if get 'stage'
+    run Create, :cre if post 'item'
+    run Create, :dup if post 'duplicate'
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
       run DeleteItem if delete
       run GetItem, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get

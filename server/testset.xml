@@ -1,14 +1,14 @@
-<testset>
+<testset xmlns="http://cpee.org/ns/properties/2.0">
   <dataelements/>
   <handlerwrapper>DefaultHandlerWrapper</handlerwrapper>
   <endpoints>
-    <machine xmlns="http://riddl.org/ns/common-patterns/properties/1.0">machine</machine>
-    <sensor xmlns="http://riddl.org/ns/common-patterns/properties/1.0">sensor</sensor>
-    <human xmlns="http://riddl.org/ns/common-patterns/properties/1.0">human</human>
-    <subprocess xmlns="http://riddl.org/ns/common-patterns/properties/1.0">subprocess</subprocess>
+    <machine>machine</machine>
+    <sensor>sensor</sensor>
+    <human>human</human>
+    <subprocess>subprocess</subprocess>
   </endpoints>
   <description>
-    <description xmlns="http://cpee.org/ns/description/1.0"></description>
+    <description xmlns="http://cpee.org/ns/description/1.0"/>
   </description>
   <transformation>
     <description type="copy"/>
@@ -16,11 +16,12 @@
     <endpoints type="none"/>
   </transformation>
   <attributes>
-    <info xmlns="http://riddl.org/ns/common-patterns/properties/1.0">diana</info>
-    <creator xmlns="http://riddl.org/ns/common-patterns/properties/1.0">Juergen Mangler</creator>
-    <author xmlns="http://riddl.org/ns/common-patterns/properties/1.0">Juergen Mangler</author>
-    <modeltype xmlns="http://riddl.org/ns/common-patterns/properties/1.0">CPEE</modeltype>
-    <theme xmlns="http://riddl.org/ns/common-patterns/properties/1.0">model</theme>
-    <status xmlns="http://riddl.org/ns/common-patterns/properties/1.0">model</status>
+    <info>diana</info>
+    <creator>Juergen Mangler</creator>
+    <author>Juergen Mangler</author>
+    <modeltype>CPEE</modeltype>
+    <theme>model</theme>
+    <status>model</status>
+    <design-stage>draft</design-stage>
   </attributes>
 </testset>
