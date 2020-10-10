@@ -65,7 +65,7 @@
       <ui-content class="noselect">
         <ui-area data-belongs-to-tab="models">
           <p>Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@acdp.at">helpdesk@acdp.at</a> if you are lost. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</p>
-          <table id="models">
+          <table id="models" class='ui-table'>
             <template id="folder">
               <tr>
                 <td data-class='icon' class="noselect">📁</td>
@@ -86,6 +86,8 @@
                 <td data-class='ops' class="noselect"><span>☰</span></td>
               </tr>
             </template>
+            <tbody>
+            </tbody>
           </table>
         </ui-area>
         <ui-area data-belongs-to-tab="newmodel" class="inactive">

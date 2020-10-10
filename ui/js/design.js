@@ -91,7 +91,7 @@ $(document).ready(function() {
           $('[data-class=delete] a',clone).attr('href','javascript:delete_it("' + data['name'] +'");');
           $('[data-class=rename] a',clone).attr('href','javascript:rename_it("' + data['name'] +'");');
           $('[data-class=duplicate] a',clone).attr('href','javascript:duplicate_it("' + data['name'] +'");');
-          $('#models').append(clone);
+          $('#models tbody').append(clone);
         });
       }
     });
