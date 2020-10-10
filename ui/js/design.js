@@ -44,6 +44,36 @@ $(document).ready(function() {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
   $('input[name=stage]').val(urlParams.get('stage') || 'draft');
+  $('ui-behind').text(urlParams.get('stage') || 'draft');
+  $('#models').on('click','td[data-class=ops] span',(e) => {
+    console.log(e);
+    var menu = {};
+    var name = $(e.currentTarget).parents('tr').find('td[data-class=name] a').text();
+    menu['Operations'] = [
+      {
+        'label': 'Duplicate',
+        'function_call': duplicate_it,
+        'text_icon': '➕',
+        'type': undefined,
+        'params': [name]
+      },
+      {
+        'label': 'Delete',
+        'function_call': delete_it,
+        'text_icon': '❌',
+        'type': undefined,
+        'params': [name]
+      },
+      {
+        'label': 'Rename',
+        'function_call': rename_it,
+        'type': undefined,
+        'text_icon': '📛',
+        'params': [name]
+      }
+    ];
+    new CustomMenu(e).contextmenu(menu);
+  });
   var def = new $.Deferred();
   def.done(function(){
     $.ajax({
@@ -52,7 +82,7 @@ $(document).ready(function() {
       data: { stage: urlParams.get('stage') || 'draft' },
       success: function(res) {
         $(res).each(function(k,data) {
-          var clone = document.importNode(document.querySelector('#line').content,true);
+          var clone = document.importNode(document.querySelector('#model').content,true);
           $('[data-class=name] a',clone).text(data['name']);
           $('[data-class=name] a',clone).attr('href','server/' + data['name']);
           $('[data-class=creator]',clone).text(data['creator']);

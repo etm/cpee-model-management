@@ -1,3 +1,24 @@
 td {
   padding-right: 1em;
 }
+
+td[data-class=icon], td[data-class=ops] {
+  font-size: 1.7em;
+}
+
+td[draggable] {
+  cursor: move;
+}
+td[data-class=ops] {
+  cursor: pointer;
+}
+
+form input {
+  width: 45em !important;
+}
+
+ui-behind {
+  text-transform: capitalize;
+  color: white;
+  font-weight: bold;
+}

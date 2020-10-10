@@ -45,6 +45,7 @@
 
     <link   rel="stylesheet"      href="/js_libs/custommenu.css" type="text/css"/>
     <link   rel="stylesheet"      href="/js_libs/ui.css" type="text/css"/>
+    <link   rel="stylesheet"      href="/cdp_ui/ui.css" type="text/css"/>
 
     <link   rel="stylesheet"      href="/js_libs/relaxngui.css" type="text/css"/>
 
@@ -52,29 +53,78 @@
     <link   rel="stylesheet"      href="css/design.css" type="text/css"/>
     <script type="text/javascript" src="js/design.js"></script>
   </head>
-  <body>
-    <form action="" method="get">
-      <input type="hidden" name="stage" value=""/>
-      <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+"/>
-      <button type="submit">New Model</button>
-    </form>
-
-    <h1>List of Models:</h1>
-
-    <table id="models">
-      <template id="line">
-        <tr>
-          <td data-class='name'><a target='_blank' href=''></a></td>
-          <td data-class='creator'></td>
-          <td data-class='author'></td>
-          <td data-class='date'></td>
-          <td data-class='delete'>[<a href=''>delete</a>]</td>
-          <td data-class='rename'>[<a href=''>rename</a>]</td>
-          <td data-class='duplicate'>[<a href=''>duplicate</a>]</td>
-          <td data-class='move'>[<a href=''>move</a>]</td>
-          <td data-class='pass'>[<a href=''>pass</a>]</td>
-        </tr>
-      </template>
-    </table>
+  <body is="x-ui">
+    <ui-rest id="main">
+      <ui-tabbar>
+        <ui-before                                  ><a class="logo" href="/"></a></ui-before>
+        <ui-tab class=""         data-tab="models"  >Models</ui-tab>
+        <ui-tab class="inactive" data-tab="newmodel">New Model</ui-tab>
+        <ui-tab class="inactive" data-tab="newdir"  >New Dir</ui-tab>
+        <ui-behind                                  ></ui-behind>
+      </ui-tabbar>
+      <ui-content class="noselect">
+        <ui-area data-belongs-to-tab="models">
+          <p>Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@acdp.at">helpdesk@acdp.at</a> if you are lost. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</p>
+          <table id="models">
+            <template id="folder">
+              <tr>
+                <td data-class='icon' class="noselect">📁</td>
+                <td data-class='name'><a target='_blank' href=''></a></td>
+                <td data-class='creator'></td>
+                <td data-class='author'></td>
+                <td data-class='date'></td>
+                <td data-class='ops' class="noselect">☰</td>
+              </tr>
+            </template>
+            <template id="model">
+              <tr>
+                <td data-class='icon' class="noselect" draggable="true">𝌭</td>
+                <td data-class='name'><a target='_blank' href=''></a></td>
+                <td data-class='creator'></td>
+                <td data-class='author'></td>
+                <td data-class='date'></td>
+                <td data-class='ops' class="noselect"><span>☰</span></td>
+              </tr>
+            </template>
+          </table>
+        </ui-area>
+        <ui-area data-belongs-to-tab="newmodel" class="inactive">
+          <p>
+            Create an empty model. Beware, if a model of the same name already
+            exists in one of the categories (e.g. draft, development,
+            production, archive) it can not be created. To protect you from
+            getting confused and shooting yourself in the foot in your little
+            modelling world we allow only unique names. Better safe than sorry.
+          </p>
+          <form action="" method="get">
+            <input type="hidden" name="stage" value=""/>
+            <p>
+              <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
+            </p>
+            <p>
+              <button type="submit">New Model</button>
+            </p>
+          </form>
+        </ui-area>
+        <ui-area data-belongs-to-tab="newdir" class="inactive">
+          <p>
+            Create an empty directory. Beware, if a directory of the same name
+            already exists in one of the categories (e.g. draft, development,
+            production, archive) it can not be created. To protect you from
+            getting confused and shooting yourself in the foot in your little
+            modelling world we allow only unique names. Better safe than sorry.
+          </p>
+          <form action="" method="get">
+            <input type="hidden" name="stage" value=""/>
+            <p>
+              <input type="text" name="dir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
+            </p>
+            <p>
+              <button type="submit">New Directory (doesnt work yet)</button>
+            </p>
+          </form>
+        </ui-area>
+      </ui-content>
+    </ui-rest>
   </body>
 </html>
