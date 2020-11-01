@@ -45,7 +45,7 @@ $(document).ready(function() {
   const urlParams = new URLSearchParams(queryString);
   $('input[name=stage]').val(urlParams.get('stage') || 'draft');
   $('ui-behind').text(urlParams.get('stage') || 'draft');
-  $('#models').on('click','td[data-class=ops] span',(e) => {
+  $('#models').on('click','td[data-class=ops]',(e) => {
     console.log(e);
     var menu = {};
     var name = $(e.currentTarget).parents('tr').find('td[data-class=name] a').text();

@@ -2,15 +2,15 @@ td {
   padding-right: 1em;
 }
 
-td[data-class=icon], td[data-class=ops] {
+td[data-class=icon] {
   font-size: 1.7em;
+}
+td[data-class=ops] {
+  cursor: pointer;
 }
 
 td[draggable] {
   cursor: move;
-}
-td[data-class=ops] {
-  cursor: pointer;
 }
 
 form input {
@@ -39,4 +39,11 @@ ui-behind {
 }
 [is="x-ui"] table.ui-table tbody tr:hover td {
   background-color: var(--x-ui-content-hover-background);
+}
+
+[is="x-ui"] table.ui-table tbody tr:nth-child(odd) td:last-child {
+  background-color: #d0d0d0;
+}
+[is="x-ui"] table.ui-table tbody tr:hover td:last-child {
+  background-color: #99cee6b0;
 }

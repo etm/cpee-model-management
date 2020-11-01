@@ -20,6 +20,7 @@ require 'rubygems'
 require 'json'
 require 'riddl/server'
 require 'riddl/client'
+require 'riddl/protocols/utils'
 require 'fileutils'
 
 class GetList < Riddl::Implementation
@@ -51,7 +52,7 @@ class RenameItem < Riddl::Implementation
     XML::Smart::modify(fnname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       creator = doc.find('string(/p:testset/p:attributes/p:creator)')
-      doc.find('/testset/attributes/p:info').each do |ele|
+      doc.find('/p:testset/p:attributes/p:info').each do |ele|
         ele.text = File.basename(fnname,'.xml')
       end
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
