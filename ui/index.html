@@ -69,11 +69,11 @@
             <template id="folder">
               <tr>
                 <td data-class='icon' class="noselect">📁</td>
-                <td data-class='name'><a target='_blank' href=''></a></td>
+                <td data-class='name'><a href=''></a></td>
                 <td data-class='creator'></td>
-                <td data-class='author'></td>
+                <td></td>
                 <td data-class='date'></td>
-                <td data-class='ops' class="noselect">☰</td>
+                <td data-class='ops' class="noselect"><span>…</span></td>
               </tr>
             </template>
             <template id="model">
@@ -100,6 +100,7 @@
           </p>
           <form action="" method="get">
             <input type="hidden" name="stage" value=""/>
+            <input type="hidden" name="dir" value=""/>
             <p>
               <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
             </p>

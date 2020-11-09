@@ -26,14 +26,16 @@
     </parameter>
   </message>
   <message name="stage">
-    <parameter name="stage" type="string">
-      <choice>
-        <value>draft</value>
-        <value>development</value>
-        <value>production</value>
-        <value>archive</value>
-      </choice>
-    </parameter>
+    <optional>
+      <parameter name="stage" type="string">
+        <choice>
+          <value>draft</value>
+          <value>development</value>
+          <value>production</value>
+          <value>archive</value>
+        </choice>
+      </parameter>
+    </optional>
   </message>
   <message name="list">
     <parameter name="list" mimetype="application/json"/>
@@ -46,6 +48,18 @@
     <post in="duplicate"/>
     <get in="stage" out="list"/>
     <sse/>
+    <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.dir">
+      <post in="item"/>
+      <post in="duplicate"/>
+      <get in="stage" out="list"/>
+      <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">
+        <get/>
+        <delete/>
+        <put in="content"/>
+        <put in="name"/>
+        <sse/>
+      </resource>
+    </resource>
     <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">
       <get/>
       <delete/>

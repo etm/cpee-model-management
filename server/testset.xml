@@ -22,6 +22,7 @@
     <modeltype>CPEE</modeltype>
     <theme>model</theme>
     <status>model</status>
-    <design-stage>draft</design-stage>
+    <design_dir></design_dir>
+    <design_stage>draft</design_stage>
   </attributes>
 </testset>
