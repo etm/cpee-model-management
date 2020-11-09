@@ -2,7 +2,10 @@ td {
   padding-right: 1em;
 }
 
-td[data-class=icon] {
+td[data-class=model] {
+  font-size: 1.7em;
+}
+td[data-class=folder] {
   font-size: 1.7em;
 }
 td[data-class=ops] {
@@ -41,9 +44,9 @@ ui-behind {
   background-color: var(--x-ui-content-hover-background);
 }
 
-[is="x-ui"] table.ui-table tbody tr:nth-child(odd) td:last-child {
+[is="x-ui"] table.ui-table tbody tr:nth-child(odd) td[data-class=ops] {
   background-color: #d0d0d0;
 }
-[is="x-ui"] table.ui-table tbody tr:hover td:last-child {
+[is="x-ui"] table.ui-table tbody tr:hover td[data-class=ops] {
   background-color: #99cee6b0;
 }

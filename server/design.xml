@@ -12,9 +12,19 @@
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
     </parameter>
   </message>
+  <message name="dir">
+    <parameter name="dir" type="string">
+      <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
+    </parameter>
+  </message>
   <message name="name">
     <parameter name="new" type="string">
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
+    </parameter>
+  </message>
+  <message name="move">
+    <parameter name="dir" type="string">
+      <param name="pattern">([a-zA-Z0-9öäüÖÄÜ _-]+\.dir)|</param>
     </parameter>
   </message>
   <message name="duplicate">
@@ -45,6 +55,7 @@
   </message>
   <resource>
     <post in="item"/>
+    <post in="dir"/>
     <post in="duplicate"/>
     <get in="stage" out="list"/>
     <sse/>
@@ -57,6 +68,7 @@
         <delete/>
         <put in="content"/>
         <put in="name"/>
+        <put in="move"/>
         <sse/>
       </resource>
     </resource>
@@ -65,6 +77,7 @@
       <delete/>
       <put in="content"/>
       <put in="name"/>
+      <put in="move"/>
       <sse/>
     </resource>
   </resource>

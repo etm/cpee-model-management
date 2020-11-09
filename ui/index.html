@@ -66,9 +66,19 @@
         <ui-area data-belongs-to-tab="models">
           <p>Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@acdp.at">helpdesk@acdp.at</a> if you are lost. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</p>
           <table id="models" class='ui-table'>
+            <template id="up">
+              <tr>
+                <td data-class='folder' class="noselect">📁</td>
+                <td data-class='name'><a href=''></a></td>
+                <td data-class='creator'></td>
+                <td></td>
+                <td data-class='date'></td>
+                <td data-class=''></td>
+              </tr>
+            </template>
             <template id="folder">
               <tr>
-                <td data-class='icon' class="noselect">📁</td>
+                <td data-class='folder' class="noselect">📁</td>
                 <td data-class='name'><a href=''></a></td>
                 <td data-class='creator'></td>
                 <td></td>
@@ -78,7 +88,7 @@
             </template>
             <template id="model">
               <tr>
-                <td data-class='icon' class="noselect" draggable="true">𝌭</td>
+                <td data-class='model' class="noselect" draggable="true">𝌭</td>
                 <td data-class='name'><a target='_blank' href=''></a></td>
                 <td data-class='creator'></td>
                 <td data-class='author'></td>
@@ -120,10 +130,10 @@
           <form action="" method="get">
             <input type="hidden" name="stage" value=""/>
             <p>
-              <input type="text" name="dir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
+              <input type="text" name="newdir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
             </p>
             <p>
-              <button type="submit">New Directory (doesnt work yet)</button>
+              <button type="submit">New Directory</button>
             </p>
           </form>
         </ui-area>

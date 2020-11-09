@@ -72,9 +72,29 @@ class RenameItem < Riddl::Implementation
     nil
   end
 end
+
+class CreateDir < Riddl::Implementation
+  def response
+    name = @p[0].value
+
+    fname = File.join('models',name + '.dir')
+    counter = 0
+    while File.exists?(fname)
+      counter += 1
+      fname = File.join('models',name + counter.to_s + '.dir')
+    end
+
+    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
+
+    Dir.mkdir(fname)
+    File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
+    nil
+  end
+end
+
 class Create < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r[-2]
+    where = @a[0] == :main ? '' : @r.last
     stage = if @a[1] == :cre
       @p.shift.value
     else
@@ -82,6 +102,7 @@ class Create < Riddl::Implementation
     end
     name = @p[0].value
     tname = @p[1] ? File.join('models',where,@p[1].value) : 'testset.xml'
+
     fname = File.join('models',where,name + '.xml')
     stage = 'draft'
     counter = 0
@@ -151,7 +172,25 @@ class GetItem < Riddl::Implementation
     end
     nil
   end
+end
 
+class MoveItem < Riddl::Implementation
+  def response
+    where = @a[0] == :main ? '' : @r[-2]
+    name  = File.basename(@r.last,'.xml')
+    to = @p[0].value
+    fname = File.join('models',where,name + '.xml')
+
+    if !File.exist?(File.join('models',to,name + '.xml'))
+      XML::Smart::modify(fname) do |doc|
+        doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
+        doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
+          ele.text = to
+        end
+      end
+      FileUtils.mv(Dir.glob(fname + '*'),File.join('models',to))
+    end
+  end
 end
 
 class PutItem < Riddl::Implementation
@@ -210,6 +249,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
     run GetList, :main if get 'stage'
     run Create, :main, :cre if post 'item'
     run Create, :main, :dup if post 'duplicate'
+    run CreateDir if post 'dir'
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
       run GetList, :sub if get 'stage'
       run Create, :sub, :cre if post 'item'
@@ -219,6 +259,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
         run GetItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
         run PutItem, :sub if put 'content'
         run RenameItem, :sub if put 'name'
+        run MoveItem, :sub if put 'move'
         run Active, :sub, @riddl_opts[:active] if sse
       end
     end
@@ -227,6 +268,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
       run GetItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
       run PutItem, :main if put 'content'
       run RenameItem, :main if put 'name'
+      run MoveItem, :main if put 'move'
       run Active, :main, @riddl_opts[:active] if sse
     end
   end
