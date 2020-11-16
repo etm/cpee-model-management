@@ -25,7 +25,7 @@ require 'fileutils'
 
 class GetList < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r.last
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
     stage = @p[0]&.value || 'draft'
 
     names = Dir.glob(File.join('models',where,'*.dir')).map do |f|
@@ -38,10 +38,24 @@ class GetList < Riddl::Implementation
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
   end
 end
+class GetListFull < Riddl::Implementation
+  def response
+    stage = @p[0]&.value || 'draft'
+
+    names = Dir.glob(File.join('models','*.dir/*.xml')).map do |f|
+      { :type => :file, :name => File.join(File.basename(File.dirname(f)),File.basename(f)), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+    end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join('models','*.xml')).map do |f|
+      fstage = File.read(f + '.stage').strip rescue 'draft'
+      { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if fstage == stage
+    end.compact.uniq.sort_by{ |e| e[:name] }
+
+    Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
+  end
+end
 
 class RenameItem < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r[-2]
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name  = File.basename(@r.last,'.xml')
     nname = @p[0].value
     fnname = File.join('models',where,nname + '.xml')
@@ -54,6 +68,7 @@ class RenameItem < Riddl::Implementation
 
     dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
     creator = dn['GN'] + ' ' + dn['SN']
+
     FileUtils.cp(File.join('models',where,name + '.xml'),fnname)
     XML::Smart::modify(fnname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
@@ -94,7 +109,7 @@ end
 
 class Create < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r.last
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
     stage = if @a[1] == :cre
       @p.shift.value
     else
@@ -144,7 +159,7 @@ end
 
 class GetItem < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r[-2]
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name   = File.basename(@r.last,'.xml')
     insta  = @a[1]
     cock   = @a[2]
@@ -176,7 +191,7 @@ end
 
 class MoveItem < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r[-2]
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name  = File.basename(@r.last,'.xml')
     to = @p[0].value
     fname = File.join('models',where,name + '.xml')
@@ -195,7 +210,7 @@ end
 
 class PutItem < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r[-2]
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name  = File.basename(@r.last,'.xml')
     cont = @p[0].value.read
     dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
@@ -218,7 +233,7 @@ end
 
 class DeleteItem < Riddl::Implementation
   def response
-    where = @a[0] == :main ? '' : @r[-2]
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name  = File.basename(@r.last,'.xml')
     File.delete(File.join('models',where,name + '.xml'))
     File.delete(File.join('models',where,name + '.xml.author'))
@@ -229,7 +244,7 @@ end
 
 class Active < Riddl::SSEImplementation
   def onopen
-    @where = @a[0] == :main ? '' : @r[-2]
+    @where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     @active = @a[1]
     @name = @r.last
     @active[@name] = File.read(File.join('models',@name + '.xml.active')) rescue nil
@@ -247,6 +262,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
 
   on resource do
     run GetList, :main if get 'stage'
+    run GetListFull if get 'full'
     run Create, :main, :cre if post 'item'
     run Create, :main, :dup if post 'duplicate'
     run CreateDir if post 'dir'
