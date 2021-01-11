@@ -45,7 +45,8 @@
 
     <link   rel="stylesheet"      href="/js_libs/custommenu.css" type="text/css"/>
     <link   rel="stylesheet"      href="/js_libs/ui.css" type="text/css"/>
-    <link   rel="stylesheet"      href="/cdp_ui/ui.css" type="text/css"/>
+
+    <link   rel="stylesheet"      href="/global_ui/ui.css" type="text/css"/>
 
     <link   rel="stylesheet"      href="/js_libs/relaxngui.css" type="text/css"/>
 
@@ -56,11 +57,12 @@
   <body is="x-ui">
     <ui-rest id="main">
       <ui-tabbar>
-        <ui-before                                  ><a class="logo" href="/"></a></ui-before>
+        <ui-before                                  ></ui-before>
         <ui-tab class=""         data-tab="models"  >Models</ui-tab>
         <ui-tab class="inactive" data-tab="newmodel">New Model</ui-tab>
         <ui-tab class="inactive" data-tab="newdir"  >New Dir</ui-tab>
         <ui-behind                                  ></ui-behind>
+        <ui-last                                    ><a class="logo" href=".."></a></ui-last>
       </ui-tabbar>
       <ui-content class="noselect">
         <ui-area data-belongs-to-tab="models">
