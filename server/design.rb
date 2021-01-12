@@ -115,11 +115,11 @@ class Create < Riddl::Implementation
     else
       nil
     end
+
     name = @p[0].value
     tname = @p[1] ? File.join('models',where,@p[1].value) : 'testset.xml'
 
     fname = File.join('models',where,name + '.xml')
-    stage = 'draft'
     counter = 0
     while File.exists?(fname)
       counter += 1
@@ -146,8 +146,6 @@ class Create < Riddl::Implementation
         doc.find('/p:testset/p:attributes/p:design_stage').each do |ele|
           ele.text = stage
         end
-      else
-        stage = doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft')
       end
     end
     File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
@@ -182,8 +180,10 @@ class GetItem < Riddl::Implementation
       return Riddl::Parameter::Complex.new('nope','text/plain','No longer exists.')
     else
       insturl = inst['CPEE-INSTANCE-URL']
+      fstage = File.read(File.join('models',where,name + '.xml.stage')).strip rescue 'draft'
+      p fstage
       @status = 302
-      @headers << Riddl::Header.new('Location',cock + insturl)
+      @headers << Riddl::Header.new('Location',cock[fstage.to_sym] + insturl)
     end
     nil
   end
