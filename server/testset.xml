@@ -5,6 +5,8 @@
     <machine>machine</machine>
     <sensor>sensor</sensor>
     <human>human</human>
+    <plc>plc</plc>
+    <robot>robot</robot>
     <subprocess>subprocess</subprocess>
   </endpoints>
   <description>
@@ -16,12 +18,11 @@
     <endpoints type="none"/>
   </transformation>
   <attributes>
-    <info>diana</info>
+    <info>none</info>
     <creator>Juergen Mangler</creator>
     <author>Juergen Mangler</author>
     <modeltype>CPEE</modeltype>
     <theme>model</theme>
-    <status>model</status>
     <design_dir></design_dir>
     <design_stage>draft</design_stage>
   </attributes>

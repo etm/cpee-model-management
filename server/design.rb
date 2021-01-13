@@ -26,7 +26,9 @@ require 'fileutils'
 class GetList < Riddl::Implementation
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
+    views = @a[1]
     stage = @p[0]&.value || 'draft'
+    stage = views[stage] if views && views[stage]
 
     names = Dir.glob(File.join('models',where,'*.dir')).map do |f|
       { :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
@@ -40,7 +42,9 @@ class GetList < Riddl::Implementation
 end
 class GetListFull < Riddl::Implementation
   def response
+    views = @a[0]
     stage = @p[0]&.value || 'draft'
+    stage = views[stage] if views && views[stage]
 
     names = Dir.glob(File.join('models','*.dir/*.xml')).map do |f|
       { :type => :file, :name => File.join(File.basename(File.dirname(f)),File.basename(f)), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
@@ -115,6 +119,8 @@ class Create < Riddl::Implementation
     else
       nil
     end
+    views = @a[2]
+    stage = views[stage] if views && views[stage]
 
     name = @p[0].value
     tname = @p[1] ? File.join('models',where,@p[1].value) : 'testset.xml'
@@ -158,10 +164,26 @@ end
 class GetItem < Riddl::Implementation
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
-    name   = File.basename(@r.last,'.xml')
+    name   = File.basename(@r[-1],'.xml')
+    fname = File.join('models',where,name + '.xml')
+    if File.exists? fname
+      Riddl::Parameter::Complex.new('content','application/xml',File.read(fname))
+    else
+      @status = 400
+    end
+  end
+end
+
+class OpenItem < Riddl::Implementation
+  def response
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-3])
+    name   = File.basename(@r[-2],'.xml')
     insta  = @a[1]
     cock   = @a[2]
     active = @a[3]
+    views  = @a[4]
+    stage  = @p[0]&.value || 'draft'
+
     inst   = if active[name]
       { 'CPEE-INSTANCE-URL' => File.read(File.join('models',where,name + '.xml.active')) } rescue nil
     else
@@ -180,10 +202,8 @@ class GetItem < Riddl::Implementation
       return Riddl::Parameter::Complex.new('nope','text/plain','No longer exists.')
     else
       insturl = inst['CPEE-INSTANCE-URL']
-      fstage = File.read(File.join('models',where,name + '.xml.stage')).strip rescue 'draft'
-      p fstage
       @status = 302
-      @headers << Riddl::Header.new('Location',cock[fstage.to_sym] + insturl)
+      @headers << Riddl::Header.new('Location',cock[stage] + insturl)
     end
     nil
   end
@@ -261,31 +281,37 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
   @riddl_opts[:active] = {}
 
   on resource do
-    run GetList, :main if get 'stage'
-    run GetListFull if get 'full'
-    run Create, :main, :cre if post 'item'
-    run Create, :main, :dup if post 'duplicate'
+    run GetList, :main, @riddl_opts[:views] if get 'stage'
+    run GetListFull, @riddl_opts[:views] if get 'full'
+    run Create, :main, :cre, @riddl_opts[:views] if post 'item'
+    run Create, :main, :dup, @riddl_opts[:views] if post 'duplicate'
     run CreateDir if post 'dir'
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
-      run GetList, :sub if get 'stage'
-      run Create, :sub, :cre if post 'item'
-      run Create, :sub, :dup if post 'duplicate'
+      run GetList, :sub, @riddl_opts[:views] if get 'stage'
+      run Create, :sub, :cre, @riddl_opts[:views] if post 'item'
+      run Create, :sub, :dup, @riddl_opts[:views] if post 'duplicate'
       on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
         run DeleteItem, :sub if delete
-        run GetItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
+        run GetItem, :sub if get
         run PutItem, :sub if put 'content'
         run RenameItem, :sub if put 'name'
         run MoveItem, :sub if put 'move'
         run Active, :sub, @riddl_opts[:active] if sse
+        on resource 'open' do
+          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active], @riddl_opts[:views] if get
+        end
       end
     end
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
       run DeleteItem, :main if delete
-      run GetItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active] if get
+      run GetItem, :main if get
       run PutItem, :main if put 'content'
       run RenameItem, :main if put 'name'
       run MoveItem, :main if put 'move'
       run Active, :main, @riddl_opts[:active] if sse
+      on resource 'open' do
+        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active], @riddl_opts[:views] if get 'stage'
+      end
     end
   end
 end.loop!

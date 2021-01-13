@@ -135,7 +135,7 @@ $(document).ready(function() {
           } else {
             var clone = document.importNode(document.querySelector('#model').content,true);
             $('[data-class=name] a',clone).text(data['name']);
-            $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name']);
+            $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
           }
           $('[data-class=creator]',clone).text(data['creator']);
           $('[data-class=author]',clone).text(data['author']);

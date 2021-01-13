@@ -1,0 +1,133 @@
+#!/usr/bin/ruby
+curpath = __dir__
+require 'rubygems'
+require 'optparse'
+require 'fileutils'
+require 'xml/smart'
+require 'zip'
+
+def wrap(s, width=78, indent=18)
+	lines = []
+	line, s = s[0..indent-2], s[indent..-1]
+  s.split(/\n/).each do |ss|
+    ss.split(/[ \t]+/).each do |word|
+      if line.size + word.size >= width
+        lines << line
+        line = (" " * (indent)) + word
+      else
+        line << " " << word
+      end
+    end
+    lines << line if line
+    line = (" " * (indent-1))
+  end
+	return lines.join "\n"
+end
+
+ARGV.options { |opt|
+  opt.summary_indent = ' ' * 2
+  opt.summary_width = 15
+  opt.banner = "Usage:\n#{opt.summary_indent}#{File.basename($0)} [options] convert | cpui DIR | new DIR\n"
+  opt.on("Options:")
+  opt.on("--help", "-h", "This text") { puts opt; exit }
+	opt.on("")
+  opt.on(wrap("[new DIR]         scaffolds a sample design server."))
+	opt.on("")
+  opt.on(wrap("[cpui DIR]        scaffolds a sample html client. New versions might require manual merging if you changed something."))
+	opt.on("")
+  opt.on(wrap("[convert]         converts all testsets in the current directory to design terminology."))
+  opt.parse!
+}
+if (ARGV.length == 0) ||
+   (ARGV.length == 1  && !(%w(convert).include?(ARGV[0]))) ||
+   (ARGV.length == 2  && !(%w(cpui new).include?(ARGV[0]))) ||
+   (ARGV.length >  2)
+  puts ARGV.options
+  exit
+end
+command = ARGV[0]
+p1      = ARGV[1]
+p2      = ARGV[2]
+ui       = "#{curpath}/../ui/"
+
+if command == 'cpui'
+    if !File.exists?(p1)
+      FileUtils.cp_r(ui,p1)
+    else
+      FileUtils.cp_r(Dir.glob(File.join(ui,'*')),p1,remove_destination: true)
+      puts "Directory already exists, updating ..."
+    end
+    js_libs(p1)
+elsif command == 'convert'
+  Dir['*.xml'].each do |f|
+    XML::Smart.modify(f) do |doc|
+      doc.register_namespace 'x', 'http://cpee.org/ns/properties/2.0'
+      if doc.root.qname.name == 'testset'
+        name = File.basename(f,'.xml')
+        creator = author = design_dir = design_stage = nil
+
+        if (dt = doc.find('/x:testset/x:attributes/x:creator')).length > 0
+          dt.each do |e|
+            creator = e.text
+          end
+        else
+          creator = 'Christine Ashcreek'
+          doc.find('/x:testset/x:attributes').each do |e|
+            e.add('x:creator',creator)
+          end
+        end
+        File.write(f + '.creator',creator)
+
+        if (dt = doc.find('/x:testset/x:attributes/x:author')).length > 0
+          dt.each do |e|
+            author = e.text
+          end
+        else
+          author = 'Christine Ashcreek'
+          doc.find('/x:testset/x:attributes').each do |e|
+            e.add('x:author',author)
+          end
+        end
+        File.write(f + '.author',author)
+
+        if (dt = doc.find('/x:testset/x:attributes/x:design_stage')).length > 0
+          dt.each do |e|
+            design_stage = e.text
+          end
+        else
+          design_stage = 'development'
+          doc.find('/x:testset/x:attributes').each do |e|
+            e.add('x:design_stage',design_stage)
+          end
+        end
+        File.write(f + '.stage',design_stage)
+
+        if (dt = doc.find('/x:testset/x:attributes/x:design_dir')).length > 0
+          dt.each do |e|
+            design_dir = e.text
+          end
+        else
+          design_dir = Dir.pwd.sub(/^.*?models\/?/,'')
+          doc.find('/x:testset/x:attributes').each do |e|
+            e.add('x:design_dir',design_dir)
+          end
+        end
+
+        if (dt = doc.find('/x:testset/x:attributes/x:info')).length > 0
+          dt.each do |e|
+            e.text = name
+          end
+        end
+      end
+    end
+  end
+elsif command == 'new'
+  if !File.exists?(p1)
+    FileUtils.cp_r("#{curpath}/server/design.rb",p1)
+    FileUtils.cp_r("#{curpath}/server/design.conf",p1) unless File.exists?(File.join('p1','design.conf'))
+    FileUtils.cp_r("#{curpath}/server/testset.xml",p1) unless File.exists?(File.join('p1','testset.xml'))
+    FileUtils.mkdir(File.join(p1,'models')) rescue nil
+  else
+    puts 'Directory already exists.'
+  end
+end

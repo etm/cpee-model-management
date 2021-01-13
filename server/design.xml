@@ -78,21 +78,23 @@
       <post in="duplicate"/>
       <get in="stage" out="list"/>
       <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">
-        <get/>
+        <get out='content'/>
         <delete/>
         <put in="content"/>
         <put in="name"/>
         <put in="move"/>
         <sse/>
+      <resource relative="open"><get in="stage"/></resource>
       </resource>
     </resource>
     <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">
-      <get/>
+      <get out='content'/>
       <delete/>
       <put in="content"/>
       <put in="name"/>
       <put in="move"/>
       <sse/>
+      <resource relative="open"><get in="stage"/></resource>
     </resource>
   </resource>
 </description>
