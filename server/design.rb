@@ -23,6 +23,14 @@ require 'riddl/client'
 require 'riddl/protocols/utils'
 require 'fileutils'
 
+def get_dn(dn)
+  if dn
+    dn.split(',').map{ |e| e.split('=',2) }.to_h
+  else
+    { 'GN' => 'Christine', 'SN' => 'Ashcreek' }
+  end
+end
+
 class GetList < Riddl::Implementation
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
@@ -70,7 +78,7 @@ class RenameItem < Riddl::Implementation
       fnname = File.join('models',where,nname + counter.to_s + '.xml')
     end
 
-    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
+    dn = get_dn @h['DN']
     creator = dn['GN'] + ' ' + dn['SN']
 
     FileUtils.cp(File.join('models',where,name + '.xml'),fnname)
@@ -103,7 +111,7 @@ class CreateDir < Riddl::Implementation
       fname = File.join('models',name + counter.to_s + '.dir')
     end
 
-    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
+    dn = get_dn @h['DN']
 
     Dir.mkdir(fname)
     File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
@@ -132,7 +140,7 @@ class Create < Riddl::Implementation
       fname = File.join('models',where,name + counter.to_s + '.xml')
     end
 
-    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
+    dn = get_dn @h['DN']
     FileUtils.cp(tname,fname)
     XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
@@ -233,7 +241,7 @@ class PutItem < Riddl::Implementation
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name  = File.basename(@r.last,'.xml')
     cont = @p[0].value.read
-    dn = @h['DN'].split(',').map{ |e| e.split('=',2) }.to_h
+    dn = get_dn @h['DN']
     XML::Smart.string(cont) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       unless File.exists?(File.join('models',where,name + '.xml.creator'))
