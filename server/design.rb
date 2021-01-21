@@ -188,23 +188,37 @@ class OpenItem < Riddl::Implementation
     name   = File.basename(@r[-2],'.xml')
     insta  = @a[1]
     cock   = @a[2]
-    active = @a[3]
-    views  = @a[4]
+    views  = @a[3]
     stage  = @p[0]&.value || 'draft'
 
-    inst   = if active[name]
-      { 'CPEE-INSTANCE-URL' => File.read(File.join('models',where,name + '.xml.active')) } rescue nil
-    else
+    fname  = File.join('models',where,name + '.xml')
+
+    inst = if File.exists?(fname + '.active') && File.exists?(fname + '.active-uuid')
+      t = {
+        'CPEE-INSTANCE-URL'  => File.read(fname + '.active'),
+        'CPEE-INSTANCE-UUID' => File.read(fname + '.active-uuid')
+      }
+      status, result, headers = Riddl::Client.new(File.join(t['CPEE-INSTANCE-URL'],'properties','attributes','uuid')).get
+      if status && status >= 200 && status < 300
+        t['CPEE-INSTANCE-UUID'] == result[0].value ? t : nil
+      else
+        nil
+      end
+    end || begin
       status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
         Riddl::Parameter::Simple.new('behavior','fork_ready'),
-        Riddl::Parameter::Complex.new('xml','application/xml',File.read(File.join('models',where,name + '.xml')))
+        Riddl::Parameter::Complex.new('xml','application/xml',File.read(fname))
       ] rescue nil
       if status && status >= 200 && status < 300
-        JSON::parse(result[0].value.read)
+        JSON::parse(result[0].value.read).tap do |t|
+          File.write(File.join(fname + '.active'),t['CPEE-INSTANCE-URL'])
+          File.write(File.join(fname + '.active-uuid'),t['CPEE-INSTANCE-UUID'])
+        end
       else
         nil
       end
     end
+
     if inst.nil?
       @status = 400
       return Riddl::Parameter::Complex.new('nope','text/plain','No longer exists.')
@@ -294,6 +308,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
     run Create, :main, :cre, @riddl_opts[:views] if post 'item'
     run Create, :main, :dup, @riddl_opts[:views] if post 'duplicate'
     run CreateDir if post 'dir'
+    run Active, @riddl_opts[:active] if sse
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
       run GetList, :sub, @riddl_opts[:views] if get 'stage'
       run Create, :sub, :cre, @riddl_opts[:views] if post 'item'
@@ -304,9 +319,11 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
         run PutItem, :sub if put 'content'
         run RenameItem, :sub if put 'name'
         run MoveItem, :sub if put 'move'
-        run Active, :sub, @riddl_opts[:active] if sse
         on resource 'open' do
-          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active], @riddl_opts[:views] if get
+          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
+        end
+        on resource 'open-new' do
+          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
         end
       end
     end
@@ -316,9 +333,11 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
       run PutItem, :main if put 'content'
       run RenameItem, :main if put 'name'
       run MoveItem, :main if put 'move'
-      run Active, :main, @riddl_opts[:active] if sse
       on resource 'open' do
-        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:active], @riddl_opts[:views] if get 'stage'
+        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
+      end
+      on resource 'open-new' do
+        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
       end
     end
   end
