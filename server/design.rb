@@ -31,30 +31,31 @@ def op(author,op,new,old=nil) #{{{
       when 'mv'
         fname  = old
         fnname = new
-        `git mv #{fname}                  #{fnname}`
-        `git mv #{fname + '.active'}      #{fnname + '.active'}`      rescue nil
-        `git mv #{fname + '.active-uuid'} #{fnname + '.active-uuid'}` rescue nil
-        `git mv #{fname + '.author'}      #{fnname + '.author'}`      rescue nil
-        `git mv #{fname + '.creator'}     #{fnname + '.creator'}`     rescue nil
-        `git mv #{fname + '.stage'}       #{fnname + '.stage'}`       rescue nil
+        `git mv "#{fname}"                  "#{fnname}" 2>/dev/null`
+        `git mv "#{fname + '.active'}"      "#{fnname + '.active'}" 2>/dev/null`
+        `git mv "#{fname + '.active-uuid'}" "#{fnname + '.active-uuid'}" 2>/dev/null`
+        `git mv "#{fname + '.author'}"      "#{fnname + '.author'}" 2>/dev/null`
+        `git mv "#{fname + '.creator'}"     "#{fnname + '.creator'}" 2>/dev/null`
+        `git mv "#{fname + '.stage'}"       "#{fnname + '.stage'}" 2>/dev/null`
       when 'rm'
         fname = new
-        `git rm -rf #{fname}`
-        `git rm -rf #{fname}.active` rescue nil
-        `git rm -rf #{fname}.active-uuid` rescue nil
-        `git rm -rf #{fname}.author` rescue nil
-        `git rm -rf #{fname}.creator` rescue nil
-        `git rm -rf #{fname}.stage` rescue nil
+        `git rm -rf "#{fname}" 2>/dev/null`
+         FileUtils.rm_rf(fname)
+        `git rm -rf "#{fname}.active" 2>/dev/null`
+        `git rm -rf "#{fname}.active-uuid" 2>/dev/null`
+        `git rm -rf "#{fname}.author" 2>/dev/null`
+        `git rm -rf "#{fname}.creator" 2>/dev/null`
+        `git rm -rf "#{fname}.stage" 2>/dev/null`
       when 'add'
         fname = new
-        `git add #{fname}`
-        `git add #{fname}.active` rescue nil
-        `git add #{fname}.active-uuid` rescue nil
-        `git add #{fname}.author` rescue nil
-        `git add #{fname}.creator` rescue nil
-        `git add #{fname}.stage` rescue nil
+        `git add "#{fname}" 2>/dev/null`
+        `git add "#{fname}.active" 2>/dev/null`
+        `git add "#{fname}.active-uuid" 2>/dev/null`
+        `git add "#{fname}.author" 2>/dev/null`
+        `git add "#{fname}.creator" 2>/dev/null`
+        `git add "#{fname}.stage" 2>/dev/null`
     end
-    `git commit -m "#{author.gusb(/"/,"'")}"`
+    `git commit -m "#{author.gsub(/"/,"'")}"`
     Dir.chdir(cdir)
   else
     case op
@@ -161,7 +162,7 @@ class RenameItem < Riddl::Implementation #{{{
     end
     File.write(fname + '.author',author)
 
-    op author, 'mv', File.join(where,nname + '.xml'), File.join(where,name + '.xml')
+    op author, 'mv', File.join('.', where, nname + '.xml'), File.join('.', where, name + '.xml')
     notify conns, 'rename', fnname, fname
     nil
   end
@@ -263,7 +264,7 @@ class Create < Riddl::Implementation #{{{
     File.write(fname + '.author',creator)
     File.write(fname + '.stage',stage)
 
-    op creator, 'add', File.join(where, name + '.xml')
+    op creator, 'add', File.join('.', where, name + '.xml')
     notify conns, 'create', fname
     nil
   end
@@ -348,7 +349,7 @@ class MoveItem < Riddl::Implementation #{{{
       end
       File.write(fname + '.author',author)
 
-      op author, 'mv', File.join(to,name + '.xml'), File.join(where,name + '.xml')
+      op author, 'mv', File.join('.', to, name + '.xml'), File.join('.', where, name + '.xml')
       notify conns, 'move', File.join('models',to,name + '.xml'), fname
     end
   end
@@ -378,7 +379,7 @@ class PutItem < Riddl::Implementation #{{{
       File.write(fname + '.stage',doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft'))
     end
 
-    op auhtor, 'add', File.join(where,name + '.xml')
+    op author, 'add', File.join('.', where, name + '.xml')
     notify conns, 'put', fname
   end
 end #}}}
@@ -393,7 +394,7 @@ class DeleteItem < Riddl::Implementation #{{{
     author = dn['GN'] + ' ' + dn['SN']
 
     notify conns, 'delete', fname
-    op author, 'rm', File.join(where,name + '.xml')
+    op author, 'rm', File.join('.', where, name + '.xml')
   end
 end #}}}
 class DeleteDir < Riddl::Implementation #{{{
