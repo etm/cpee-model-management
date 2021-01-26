@@ -23,6 +23,61 @@ require 'riddl/client'
 require 'riddl/protocols/utils'
 require 'fileutils'
 
+def op(author,op,new,old=nil) #{{{
+  if File.exists?(File.join('models','.git'))
+    cdir = Dir.pwd
+    Dir.chdir('models')
+    case op
+      when 'mv'
+        fname  = old
+        fnname = new
+        `git mv #{fname}                  #{fnname}`
+        `git mv #{fname + '.active'}      #{fnname + '.active'}`      rescue nil
+        `git mv #{fname + '.active-uuid'} #{fnname + '.active-uuid'}` rescue nil
+        `git mv #{fname + '.author'}      #{fnname + '.author'}`      rescue nil
+        `git mv #{fname + '.creator'}     #{fnname + '.creator'}`     rescue nil
+        `git mv #{fname + '.stage'}       #{fnname + '.stage'}`       rescue nil
+      when 'rm'
+        fname = new
+        `git rm -rf #{fname}`
+        `git rm -rf #{fname}.active` rescue nil
+        `git rm -rf #{fname}.active-uuid` rescue nil
+        `git rm -rf #{fname}.author` rescue nil
+        `git rm -rf #{fname}.creator` rescue nil
+        `git rm -rf #{fname}.stage` rescue nil
+      when 'add'
+        fname = new
+        `git add #{fname}`
+        `git add #{fname}.active` rescue nil
+        `git add #{fname}.active-uuid` rescue nil
+        `git add #{fname}.author` rescue nil
+        `git add #{fname}.creator` rescue nil
+        `git add #{fname}.stage` rescue nil
+    end
+    `git commit -m "#{author.gusb(/"/,"'")}"`
+    Dir.chdir(cdir)
+  else
+    case op
+      when 'mv'
+        fname = File.join('models',old)
+        fnname = File.join('models',new)
+        FileUtils.mv(fname,fnname)
+        FileUtils.mv(fname + '.active',fnname + '.active') rescue nil
+        FileUtils.mv(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
+        FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
+        FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
+        FileUtils.mv(fname + '.stage',fnname + '.stage') rescue nil
+      when 'rm'
+        fname = File.join('models',new)
+        FileUtils.rm_rf(fname)
+        File.delete(fname + '.active') rescue nil
+        File.delete(fname + '.active-uuid') rescue nil
+        File.delete(fname + '.author') rescue nil
+        File.delete(fname + '.creator') rescue nil
+        File.delete(fname + '.stage') rescue nil
+    end
+  end
+end #}}}
 def get_dn(dn) #{{{
   if dn
     dn.split(',').map{ |e| e.split('=',2) }.to_h
@@ -38,7 +93,6 @@ def notify(conns,op,f,s=nil) #{{{
     { :op => op, :type => :file, :name => f.sub(/models\//,''), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema }
   end
   what[:source] = s.sub(/models\//,'') unless s.nil?
-  p what
   conns.each do |e|
     e.send what
   end
@@ -94,24 +148,20 @@ class RenameItem < Riddl::Implementation #{{{
     end
 
     dn = get_dn @h['DN']
-    creator = dn['GN'] + ' ' + dn['SN']
+    author = dn['GN'] + ' ' + dn['SN']
 
-    FileUtils.mv(fname,fnname)
-    FileUtils.mv(fname + '.active',fnname + '.active') rescue nil
-    FileUtils.mv(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
-    FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
-    FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
-    FileUtils.mv(fname + '.stage',fnname + '.stage') rescue nil
-    XML::Smart::modify(fnname) do |doc|
+    XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       doc.find('/p:testset/p:attributes/p:info').each do |ele|
         ele.text = File.basename(fnname,'.xml')
       end
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
-        ele.text = dn['GN'] + ' ' + dn['SN']
+        ele.text = author
       end
     end
-    File.write(fnname + '.author',dn['GN'] + ' ' + dn['SN'])
+    File.write(fname + '.author',author)
+
+    op author, 'mv', File.join(where,nname + '.xml'), File.join(where,name + '.xml')
     notify conns, 'rename', fnname, fname
     nil
   end
@@ -130,12 +180,10 @@ class RenameDir < Riddl::Implementation #{{{
     end
 
     dn = get_dn @h['DN']
-    creator = dn['GN'] + ' ' + dn['SN']
+    author = dn['GN'] + ' ' + dn['SN']
+    File.write(fname + '.author',author)
 
-    File.rename(fname,fnname)
-    FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
-    FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
-    File.write(fnname + '.author',dn['GN'] + ' ' + dn['SN'])
+    op author, 'mv', File.join(nname + '.dir'), File.join(name + '.dir')
     notify conns, 'rename_dir', fnname, fname
     nil
   end
@@ -154,9 +202,12 @@ class CreateDir < Riddl::Implementation #{{{
     end
 
     dn = get_dn @h['DN']
+    creator = dn['GN'] + ' ' + dn['SN']
 
     Dir.mkdir(fname)
-    File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
+    File.write(fname + '.creator',creator)
+
+    op creator, 'add', name + '.dir'
     notify conns, 'create', fname
     nil
   end
@@ -186,6 +237,7 @@ class Create < Riddl::Implementation #{{{
     end
 
     dn = get_dn @h['DN']
+    creator = dn['GN'] + ' ' + dn['SN']
     FileUtils.cp(source,fname)
     XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
@@ -193,10 +245,10 @@ class Create < Riddl::Implementation #{{{
         ele.text = File.basename(fname,'.xml')
       end
       doc.find('/p:testset/p:attributes/p:creator').each do |ele|
-        ele.text = dn['GN'] + ' ' + dn['SN']
+        ele.text = creator
       end
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
-        ele.text = dn['GN'] + ' ' + dn['SN']
+        ele.text = creator
       end
       doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
         ele.text = where
@@ -207,9 +259,11 @@ class Create < Riddl::Implementation #{{{
         end
       end
     end
-    File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
-    File.write(fname + '.author',dn['GN'] + ' ' + dn['SN'])
+    File.write(fname + '.creator',creator)
+    File.write(fname + '.author',creator)
     File.write(fname + '.stage',stage)
+
+    op creator, 'add', File.join(where, name + '.xml')
     notify conns, 'create', fname
     nil
   end
@@ -282,8 +336,9 @@ class MoveItem < Riddl::Implementation #{{{
 
     name  = File.basename(@r.last,'.xml')
     to = @p[0].value
-    fname = File.join('models',where,name + '.xml')
 
+    fname = File.join('models',where,name + '.xml')
+    author = dn['GN'] + ' ' + dn['SN']
     if !File.exist?(File.join('models',to,name + '.xml'))
       XML::Smart::modify(fname) do |doc|
         doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
@@ -291,7 +346,9 @@ class MoveItem < Riddl::Implementation #{{{
           ele.text = to
         end
       end
-      FileUtils.mv(Dir.glob(fname + '*'),File.join('models',to))
+      File.write(fname + '.author',author)
+
+      op author, 'mv', File.join(to,name + '.xml'), File.join(where,name + '.xml')
       notify conns, 'move', File.join('models',to,name + '.xml'), fname
     end
   end
@@ -303,7 +360,9 @@ class PutItem < Riddl::Implementation #{{{
     name  = File.basename(@r.last,'.xml')
     cont = @p[0].value.read
     dn = get_dn @h['DN']
+
     fname = File.join('models',where,name + '.xml')
+    author = dn['GN'] + ' ' + dn['SN']
     XML::Smart.string(cont) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       unless File.exists?(File.join('models',where,name + '.xml.creator'))
@@ -315,9 +374,11 @@ class PutItem < Riddl::Implementation #{{{
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
       File.write(fname,doc.to_s)
-      File.write(fname + '.author',dn['GN'] + ' ' + dn['SN'])
+      File.write(fname + '.author',author)
       File.write(fname + '.stage',doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft'))
     end
+
+    op auhtor, 'add', File.join(where,name + '.xml')
     notify conns, 'put', fname
   end
 end #}}}
@@ -327,11 +388,12 @@ class DeleteItem < Riddl::Implementation #{{{
     conns = @a[1]
     name  = File.basename(@r.last,'.xml')
     fname = File.join('models',where,name + '.xml')
+
+    dn     = get_dn @h['DN']
+    author = dn['GN'] + ' ' + dn['SN']
+
     notify conns, 'delete', fname
-    File.delete(fname)
-    File.delete(fname + '.author')
-    File.delete(fname + '.creator')
-    File.delete(fname + '.stage')
+    op author, 'rm', File.join(where,name + '.xml')
   end
 end #}}}
 class DeleteDir < Riddl::Implementation #{{{
@@ -339,10 +401,12 @@ class DeleteDir < Riddl::Implementation #{{{
     conns = @a[0]
     name  = File.basename(@r.last,'.dir')
     fname = File.join('models',name + '.dir')
+
+    dn     = get_dn @h['DN']
+    author = dn['GN'] + ' ' + dn['SN']
+
     notify conns, 'delete', fname
-    FileUtils.rm_rf(fname)
-    File.delete(fname + '.author')
-    File.delete(fname + '.creator')
+    op author, 'rm', File.join(name + '.dir')
   end
 end #}}}
 
