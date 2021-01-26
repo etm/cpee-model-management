@@ -2,7 +2,6 @@ var gstage;
 var gdir;
 
 function move_it(name,todir) {
-  console.log(todir);
   $.ajax({
     type: "PUT",
     url: "server/" + gdir + name,
@@ -14,26 +13,20 @@ function move_it(name,todir) {
 }
 function rename_it(name) {
   var newname;
-  if (newname = prompt('New name please!',name.replace(/\.xml$/,''))) {
+  if (newname = prompt('New name please!',name.replace(/\.xml$/,'').replace(/\.dir$/,''))) {
     $.ajax({
       type: "PUT",
       url: "server/" + gdir + name,
       data: { new: newname },
       success: function(res) {
-        $.ajax({
-          type: "DELETE",
-          url: "server/" + gdir + name,
-          success: function(res) {
-            location.reload();
-          }
-        });
+        location.reload();
       }
     });
   }
 }
 function duplicate_it(name) {
   var newname;
-  if (newname = prompt('New name please!',name.replace(/\.xml$/,''))) {
+  if (newname = prompt('New name please!',name.replace(/\.xml$/,'').replace(/\.dir$/,''))) {
     $.ajax({
       type: "POST",
       url: "server/" + gdir,
@@ -65,7 +58,6 @@ $(document).ready(function() {
   $('input[name=dir]').val(gdir);
   $('ui-behind').text(gstage);
 
-
   var dragged;
   $('#models').on('drag','td[data-class=model]',false);
   $('#models').on('dragstart','td[data-class=model]',(e) => {
@@ -88,15 +80,8 @@ $(document).ready(function() {
   });
   $('#models').on('click','td[data-class=ops]',(e) => {
     var menu = {};
-    var name = $(e.currentTarget).parents('tr').find('td[data-class=name] a').text();
+    var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');
     menu['Operations'] = [
-      {
-        'label': 'Duplicate',
-        'function_call': duplicate_it,
-        'text_icon': '➕',
-        'type': undefined,
-        'params': [name]
-      },
       {
         'label': 'Delete',
         'function_call': delete_it,
@@ -112,6 +97,17 @@ $(document).ready(function() {
         'params': [name]
       }
     ];
+    if (name.match(/\.xml$/)) {
+      menu['Operations'].unshift(
+        {
+          'label': 'Duplicate',
+          'function_call': duplicate_it,
+          'text_icon': '➕',
+          'type': undefined,
+          'params': [name]
+        }
+      );
+    }
     new CustomMenu(e).contextmenu(menu);
   });
   var def = new $.Deferred();
@@ -131,10 +127,12 @@ $(document).ready(function() {
           if (data.type == 'dir') {
             var clone = document.importNode(document.querySelector('#folder').content,true);
             $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
+            $('[data-class=name]',clone).attr('data-full-name',data['name']);
             $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=' + data['name']);
           } else {
             var clone = document.importNode(document.querySelector('#model').content,true);
             $('[data-class=name] a',clone).text(data['name']);
+            $('[data-class=name]',clone).attr('data-full-name',data['name']);
             $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
           }
           $('[data-class=creator]',clone).text(data['creator']);

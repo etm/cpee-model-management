@@ -23,15 +23,28 @@ require 'riddl/client'
 require 'riddl/protocols/utils'
 require 'fileutils'
 
-def get_dn(dn)
+def get_dn(dn) #{{{
   if dn
     dn.split(',').map{ |e| e.split('=',2) }.to_h
   else
     { 'GN' => 'Christine', 'SN' => 'Ashcreek' }
   end
-end
+end #}}}
+def notify(conns,op,f,s=nil) #{{{
+  what = if f =~ /\.dir$/
+    { :op => op, :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+  else
+    fstage = File.read(f + '.stage').strip rescue 'draft'
+    { :op => op, :type => :file, :name => f.sub(/models\//,''), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema }
+  end
+  what[:source] = s.sub(/models\//,'') unless s.nil?
+  p what
+  conns.each do |e|
+    e.send what
+  end
+end #}}}
 
-class GetList < Riddl::Implementation
+class GetList < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
     views = @a[1]
@@ -47,8 +60,8 @@ class GetList < Riddl::Implementation
 
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
   end
-end
-class GetListFull < Riddl::Implementation
+end #}}}
+class GetListFull < Riddl::Implementation #{{{
   def response
     views = @a[0]
     stage = @p[0]&.value || 'draft'
@@ -63,13 +76,15 @@ class GetListFull < Riddl::Implementation
 
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
   end
-end
+end #}}}
 
-class RenameItem < Riddl::Implementation
+class RenameItem < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+    conns = @a[1]
     name  = File.basename(@r.last,'.xml')
     nname = @p[0].value
+    fname  = File.join('models',where,name + '.xml')
     fnname = File.join('models',where,nname + '.xml')
     counter = 0
     stage = 'draft'
@@ -81,28 +96,55 @@ class RenameItem < Riddl::Implementation
     dn = get_dn @h['DN']
     creator = dn['GN'] + ' ' + dn['SN']
 
-    FileUtils.cp(File.join('models',where,name + '.xml'),fnname)
+    FileUtils.mv(fname,fnname)
+    FileUtils.mv(fname + '.active',fnname + '.active') rescue nil
+    FileUtils.mv(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
+    FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
+    FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
+    FileUtils.mv(fname + '.stage',fnname + '.stage') rescue nil
     XML::Smart::modify(fnname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
-      creator = doc.find('string(/p:testset/p:attributes/p:creator)')
       doc.find('/p:testset/p:attributes/p:info').each do |ele|
         ele.text = File.basename(fnname,'.xml')
       end
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
-      stage = doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft')
     end
-    File.write(fnname + '.creator',creator)
     File.write(fnname + '.author',dn['GN'] + ' ' + dn['SN'])
-    File.write(fnname + '.stage',stage)
+    notify conns, 'rename', fnname, fname
     nil
   end
-end
+end #}}}
+class RenameDir < Riddl::Implementation #{{{
+  def response
+    conns = @a[0]
+    name  = File.basename(@r.last,'.dir')
+    nname = @p[0].value
+    fname  = File.join('models',name + '.dir')
+    fnname = File.join('models',nname + '.dir')
+    counter = 0
+    while File.exists?(fnname)
+      counter += 1
+      fnname = File.join('models',nname + counter.to_s + '.dir')
+    end
 
-class CreateDir < Riddl::Implementation
+    dn = get_dn @h['DN']
+    creator = dn['GN'] + ' ' + dn['SN']
+
+    File.rename(fname,fnname)
+    FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
+    FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
+    File.write(fnname + '.author',dn['GN'] + ' ' + dn['SN'])
+    notify conns, 'rename_dir', fnname, fname
+    nil
+  end
+end #}}}
+
+class CreateDir < Riddl::Implementation #{{{
   def response
     name = @p[0].value
+    conns = @a[0]
 
     fname = File.join('models',name + '.dir')
     counter = 0
@@ -115,11 +157,11 @@ class CreateDir < Riddl::Implementation
 
     Dir.mkdir(fname)
     File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
+    notify conns, 'create', fname
     nil
   end
-end
-
-class Create < Riddl::Implementation
+end #}}}
+class Create < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
     stage = if @a[1] == :cre
@@ -128,12 +170,15 @@ class Create < Riddl::Implementation
       nil
     end
     views = @a[2]
-    stage = views[stage] if views && views[stage]
+    conns = @a[3]
 
     name = @p[0].value
-    tname = @p[1] ? File.join('models',where,@p[1].value) : 'testset.xml'
-
+    source = @p[1] ? File.join('models',where,@p[1].value) : 'testset.xml'
     fname = File.join('models',where,name + '.xml')
+
+    stage = File.read(source + '.stage') if stage.nil? && File.exists?(source + '.stage')
+    stage = views[stage] if views && views[stage]
+
     counter = 0
     while File.exists?(fname)
       counter += 1
@@ -141,7 +186,7 @@ class Create < Riddl::Implementation
     end
 
     dn = get_dn @h['DN']
-    FileUtils.cp(tname,fname)
+    FileUtils.cp(source,fname)
     XML::Smart::modify(fname) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       doc.find('/p:testset/p:attributes/p:info').each do |ele|
@@ -165,11 +210,12 @@ class Create < Riddl::Implementation
     File.write(fname + '.creator',dn['GN'] + ' ' + dn['SN'])
     File.write(fname + '.author',dn['GN'] + ' ' + dn['SN'])
     File.write(fname + '.stage',stage)
+    notify conns, 'create', fname
     nil
   end
-end
+end #}}}
 
-class GetItem < Riddl::Implementation
+class GetItem < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
     name   = File.basename(@r[-1],'.xml')
@@ -180,9 +226,8 @@ class GetItem < Riddl::Implementation
       @status = 400
     end
   end
-end
-
-class OpenItem < Riddl::Implementation
+end #}}}
+class OpenItem < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-3])
     name   = File.basename(@r[-2],'.xml')
@@ -229,11 +274,12 @@ class OpenItem < Riddl::Implementation
     end
     nil
   end
-end
-
-class MoveItem < Riddl::Implementation
+end #}}}
+class MoveItem < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+    conns = @a[1]
+
     name  = File.basename(@r.last,'.xml')
     to = @p[0].value
     fname = File.join('models',where,name + '.xml')
@@ -246,16 +292,18 @@ class MoveItem < Riddl::Implementation
         end
       end
       FileUtils.mv(Dir.glob(fname + '*'),File.join('models',to))
+      notify conns, 'move', File.join('models',to,name + '.xml'), fname
     end
   end
-end
-
-class PutItem < Riddl::Implementation
+end #}}}
+class PutItem < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+    conns = @a[1]
     name  = File.basename(@r.last,'.xml')
     cont = @p[0].value.read
     dn = get_dn @h['DN']
+    fname = File.join('models',where,name + '.xml')
     XML::Smart.string(cont) do |doc|
       doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
       unless File.exists?(File.join('models',where,name + '.xml.creator'))
@@ -266,79 +314,93 @@ class PutItem < Riddl::Implementation
       doc.find('/p:testset/p:attributes/p:author').each do |ele|
         ele.text = dn['GN'] + ' ' + dn['SN']
       end
-      File.write(File.join('models',where,name + '.xml'),doc.to_s)
-      File.write(File.join('models',where,name + '.xml.author'),dn['GN'] + ' ' + dn['SN'])
-      File.write(File.join('models',where,name + '.xml.stage'),doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft'))
+      File.write(fname,doc.to_s)
+      File.write(fname + '.author',dn['GN'] + ' ' + dn['SN'])
+      File.write(fname + '.stage',doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft'))
     end
+    notify conns, 'put', fname
   end
-end
-
-class DeleteItem < Riddl::Implementation
+end #}}}
+class DeleteItem < Riddl::Implementation #{{{
   def response
     where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+    conns = @a[1]
     name  = File.basename(@r.last,'.xml')
-    File.delete(File.join('models',where,name + '.xml'))
-    File.delete(File.join('models',where,name + '.xml.author'))
-    File.delete(File.join('models',where,name + '.xml.creator'))
-    File.delete(File.join('models',where,name + '.xml.stage'))
+    fname = File.join('models',where,name + '.xml')
+    notify conns, 'delete', fname
+    File.delete(fname)
+    File.delete(fname + '.author')
+    File.delete(fname + '.creator')
+    File.delete(fname + '.stage')
   end
-end
+end #}}}
+class DeleteDir < Riddl::Implementation #{{{
+  def response
+    conns = @a[0]
+    name  = File.basename(@r.last,'.dir')
+    fname = File.join('models',name + '.dir')
+    notify conns, 'delete', fname
+    FileUtils.rm_rf(fname)
+    File.delete(fname + '.author')
+    File.delete(fname + '.creator')
+  end
+end #}}}
 
-class Active < Riddl::SSEImplementation
+class Active < Riddl::SSEImplementation #{{{
   def onopen
-    @where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
-    @active = @a[1]
-    @name = @r.last
-    @active[@name] = File.read(File.join('models',@name + '.xml.active')) rescue nil
+    @conns = @a[0]
+    @conns << self
   end
   def onclose
-    @active.delete(@r[0])
+    @conns.delete(self)
   end
-end
+end #}}}
 
-server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost') do |opts|
+server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost') do |opts| #{{{
   accessible_description true
   cross_site_xhr true
 
-  @riddl_opts[:active] = {}
+  @riddl_opts[:connections] = []
 
   on resource do
     run GetList, :main, @riddl_opts[:views] if get 'stage'
     run GetListFull, @riddl_opts[:views] if get 'full'
-    run Create, :main, :cre, @riddl_opts[:views] if post 'item'
-    run Create, :main, :dup, @riddl_opts[:views] if post 'duplicate'
-    run CreateDir if post 'dir'
-    run Active, @riddl_opts[:active] if sse
+    run Create, :main, :cre, @riddl_opts[:views], @riddl_opts[:connections] if post 'item'
+    run Create, :main, :dup, @riddl_opts[:views], @riddl_opts[:connections] if post 'duplicate'
+    run CreateDir, @riddl_opts[:connections] if post 'dir'
+    run Active, @riddl_opts[:connections] if sse
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
       run GetList, :sub, @riddl_opts[:views] if get 'stage'
-      run Create, :sub, :cre, @riddl_opts[:views] if post 'item'
-      run Create, :sub, :dup, @riddl_opts[:views] if post 'duplicate'
+      run Create, :sub, :cre, @riddl_opts[:views], @riddl_opts[:connections] if post 'item'
+      run Create, :sub, :dup, @riddl_opts[:views], @riddl_opts[:connections] if post 'duplicate'
+      run DeleteDir, @riddl_opts[:connections] if delete
+      run RenameDir, @riddl_opts[:connections] if put 'name'
       on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-        run DeleteItem, :sub if delete
+        run DeleteItem, :sub, @riddl_opts[:connections] if delete
         run GetItem, :sub if get
-        run PutItem, :sub if put 'content'
-        run RenameItem, :sub if put 'name'
-        run MoveItem, :sub if put 'move'
+        run PutItem, :sub, @riddl_opts[:connections] if put 'content'
+        run RenameItem, :sub, @riddl_opts[:connections] if put 'name'
+        run MoveItem, :sub, @riddl_opts[:connections] if put 'dirname'
         on resource 'open' do
-          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
+          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views], false if get 'stage'
         end
         on resource 'open-new' do
-          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
+          run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views], true if get 'stage'
         end
       end
     end
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-      run DeleteItem, :main if delete
+      run DeleteItem, :main, @riddl_opts[:connections] if delete
       run GetItem, :main if get
-      run PutItem, :main if put 'content'
-      run RenameItem, :main if put 'name'
-      run MoveItem, :main if put 'move'
+      run PutItem, :main, @riddl_opts[:connections] if put 'content'
+      run RenameItem, :main, @riddl_opts[:connections] if put 'name'
+      run MoveItem, :main, @riddl_opts[:connections] if put 'dirname'
       on resource 'open' do
-        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
+        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views], false if get 'stage'
       end
       on resource 'open-new' do
-        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views] if get 'stage'
+        run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views], true if get 'stage'
       end
     end
   end
-end.loop!
+end.loop! #}}}

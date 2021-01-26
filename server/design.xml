@@ -12,19 +12,19 @@
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
     </parameter>
   </message>
-  <message name="dir">
-    <parameter name="dir" type="string">
-      <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
-    </parameter>
-  </message>
   <message name="name">
     <parameter name="new" type="string">
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
     </parameter>
   </message>
-  <message name="move">
+  <message name="dir">
     <parameter name="dir" type="string">
-      <param name="pattern">([a-zA-Z0-9öäüÖÄÜ _-]+\.dir)|</param>
+      <param name="pattern">([a-zA-Z0-9öäüÖÄÜ _-]+)|</param>
+    </parameter>
+  </message>
+  <message name="dirname">
+    <parameter name="dir" type="string">
+      <param name="pattern">([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir|</param>
     </parameter>
   </message>
   <message name="duplicate">
@@ -77,24 +77,26 @@
       <post in="item"/>
       <post in="duplicate"/>
       <get in="stage" out="list"/>
+      <delete/>
+      <put in="name"/> <!-- rename -->
       <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">
         <get out='content'/>
         <delete/>
         <put in="content"/>
-        <put in="name"/>
-        <put in="move"/>
-        <sse/>
-      <resource relative="open"><get in="stage"/></resource>
+        <put in="name"/> <!-- rename -->
+        <put in="dirname"/> <!-- move -->
+        <resource relative="open"><get in="stage"/></resource>
+        <resource relative="open-new"><get in="stage"/></resource>
       </resource>
     </resource>
     <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">
       <get out='content'/>
       <delete/>
       <put in="content"/>
-      <put in="name"/>
-      <put in="move"/>
-      <sse/>
+      <put in="name"/> <!-- rename -->
+      <put in="dirname"/> <!-- move -->
       <resource relative="open"><get in="stage"/></resource>
+      <resource relative="open-new"><get in="stage"/></resource>
     </resource>
   </resource>
 </description>
