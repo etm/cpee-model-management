@@ -46,15 +46,14 @@ def op(author,op,new,old=nil) #{{{
         `git rm -rf "#{fname}.author" 2>/dev/null`
         `git rm -rf "#{fname}.creator" 2>/dev/null`
         `git rm -rf "#{fname}.stage" 2>/dev/null`
-      when 'add'
-        fname = new
-        `git add "#{fname}" 2>/dev/null`
-        `git add "#{fname}.active" 2>/dev/null`
-        `git add "#{fname}.active-uuid" 2>/dev/null`
-        `git add "#{fname}.author" 2>/dev/null`
-        `git add "#{fname}.creator" 2>/dev/null`
-        `git add "#{fname}.stage" 2>/dev/null`
     end
+    fname = new
+    `git add "#{fname}" 2>/dev/null`
+    `git add "#{fname}.active" 2>/dev/null`
+    `git add "#{fname}.active-uuid" 2>/dev/null`
+    `git add "#{fname}.author" 2>/dev/null`
+    `git add "#{fname}.creator" 2>/dev/null`
+    `git add "#{fname}.stage" 2>/dev/null`
     `git commit -m "#{author.gsub(/"/,"'")}"`
     Dir.chdir(cdir)
   else
@@ -88,10 +87,18 @@ def get_dn(dn) #{{{
 end #}}}
 def notify(conns,op,f,s=nil) #{{{
   what = if f =~ /\.dir$/
-    { :op => op, :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+    if  op == 'delete'
+      { :op => op, :type => :dir, :name => File.basename(f) }
+    else
+      { :op => op, :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+    end
   else
-    fstage = File.read(f + '.stage').strip rescue 'draft'
-    { :op => op, :type => :file, :name => f.sub(/models\//,''), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema }
+    if  op == 'delete'
+      { :op => op, :type => :file, :name => f.sub(/models\//,'') }
+    else
+      fstage = File.read(f + '.stage').strip rescue 'draft'
+      { :op => op, :type => :file, :name => f.sub(/models\//,''), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema }
+    end
   end
   what[:source] = s.sub(/models\//,'') unless s.nil?
   conns.each do |e|
@@ -185,7 +192,7 @@ class RenameDir < Riddl::Implementation #{{{
     File.write(fname + '.author',author)
 
     op author, 'mv', File.join(nname + '.dir'), File.join(name + '.dir')
-    notify conns, 'rename_dir', fnname, fname
+    notify conns, 'rename', fnname, fname
     nil
   end
 end #}}}
@@ -206,7 +213,9 @@ class CreateDir < Riddl::Implementation #{{{
     creator = dn['GN'] + ' ' + dn['SN']
 
     Dir.mkdir(fname)
+    FileUtils.touch(File.join(fname,'.gitignore'))
     File.write(fname + '.creator',creator)
+    File.write(fname + '.author',creator)
 
     op creator, 'add', name + '.dir'
     notify conns, 'create', fname
@@ -339,6 +348,7 @@ class MoveItem < Riddl::Implementation #{{{
     to = @p[0].value
 
     fname = File.join('models',where,name + '.xml')
+    dn = get_dn @h['DN']
     author = dn['GN'] + ' ' + dn['SN']
     if !File.exist?(File.join('models',to,name + '.xml'))
       XML::Smart::modify(fname) do |doc|
@@ -393,8 +403,8 @@ class DeleteItem < Riddl::Implementation #{{{
     dn     = get_dn @h['DN']
     author = dn['GN'] + ' ' + dn['SN']
 
-    notify conns, 'delete', fname
     op author, 'rm', File.join('.', where, name + '.xml')
+    notify conns, 'delete', fname
   end
 end #}}}
 class DeleteDir < Riddl::Implementation #{{{
@@ -406,8 +416,8 @@ class DeleteDir < Riddl::Implementation #{{{
     dn     = get_dn @h['DN']
     author = dn['GN'] + ' ' + dn['SN']
 
-    notify conns, 'delete', fname
     op author, 'rm', File.join(name + '.dir')
+    notify conns, 'delete', fname
   end
 end #}}}
 
