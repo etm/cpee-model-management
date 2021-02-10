@@ -110,14 +110,14 @@
             getting confused and shooting yourself in the foot in your little
             modelling world we allow only unique names. Better safe than sorry.
           </p>
-          <form action="" method="get">
+          <form id="newmod">
             <input type="hidden" name="stage" value=""/>
             <input type="hidden" name="dir" value=""/>
             <p>
               <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
             </p>
             <p>
-              <button type="submit">New Model</button>
+              <button>New Model</button>
             </p>
           </form>
         </ui-area>
@@ -129,15 +129,15 @@
             getting confused and shooting yourself in the foot in your little
             modelling world we allow only unique names. Better safe than sorry.
           </p>
-          <form action="" method="get">
+          <form id="newdir">
             <input type="hidden" name="stage" value=""/>
             <p>
               <input type="text" name="newdir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
             </p>
             <p>
-              <button type="submit">New Directory</button>
+              <button>New Directory</button>
             </p>
-          </form>
+          </id>
         </ui-area>
       </ui-content>
     </ui-rest>

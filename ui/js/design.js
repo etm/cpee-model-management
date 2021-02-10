@@ -5,10 +5,7 @@ function move_it(name,todir) {
   $.ajax({
     type: "PUT",
     url: "server/" + gdir + name,
-    data: { dir: todir },
-    success: function(res) {
-      location.reload();
-    }
+    data: { dir: todir }
   });
 }
 function rename_it(name) {
@@ -17,10 +14,7 @@ function rename_it(name) {
     $.ajax({
       type: "PUT",
       url: "server/" + gdir + name,
-      data: { new: newname },
-      success: function(res) {
-        location.reload();
-      }
+      data: { new: newname }
     });
   }
 }
@@ -30,8 +24,7 @@ function duplicate_it(name) {
     $.ajax({
       type: "POST",
       url: "server/" + gdir,
-      data: { new: newname, old: name },
-      success: function() { location.reload(); },
+      data: { new: newname, old: name }
     });
   }
 }
@@ -39,12 +32,56 @@ function delete_it(name) {
   if (confirm('Are you really, really, REALLY sure!')) {
     $.ajax({
       type: "DELETE",
-      url: "server/" + gdir + name,
-      success: function(res) {
-        location.reload();
-      }
+      url: "server/" + gdir + name
     });
   }
+}
+
+function es_init(gdir,gstage) {
+  var es = new EventSource('server/');
+  es.onopen = function() {
+    console.log('es open');
+  };
+  es.onmessage = function(e) {
+    paint(gdir,gstage);
+  };
+  es.onerror = function() {
+    // es_init();
+  };
+}
+
+function paint(gdir,gstage) {
+  $('#models tbody').empty();
+  if (gdir && gdir != '') {
+    var clone = document.importNode(document.querySelector('#up').content,true);
+    $('[data-class=name] a',clone).text('..');
+    $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=');
+    $('#models tbody').append(clone);
+  }
+  $.ajax({
+    type: "GET",
+    url: "server/" + gdir,
+    data: { stage: gstage },
+    success: function(res) {
+      $(res).each(function(k,data) {
+        if (data.type == 'dir') {
+          var clone = document.importNode(document.querySelector('#folder').content,true);
+          $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
+          $('[data-class=name]',clone).attr('data-full-name',data['name']);
+          $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=' + data['name']);
+        } else {
+          var clone = document.importNode(document.querySelector('#model').content,true);
+          $('[data-class=name] a',clone).text(data['name']);
+          $('[data-class=name]',clone).attr('data-full-name',data['name']);
+          $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
+        }
+        $('[data-class=creator]',clone).text(data['creator']);
+        $('[data-class=author]',clone).text(data['author']);
+        $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
+        $('#models tbody').append(clone);
+      });
+    }
+  });
 }
 
 $(document).ready(function() {
@@ -53,6 +90,8 @@ $(document).ready(function() {
 
   gstage = urlParams.get('stage') || 'draft';
   gdir = urlParams.get('dir') ? (urlParams.get('dir') + '/').replace(/\/+/,'/') : '';
+
+  es_init(gdir,gstage);
 
   $('input[name=stage]').val(gstage);
   $('input[name=dir]').val(gdir);
@@ -110,60 +149,31 @@ $(document).ready(function() {
     }
     new CustomMenu(e).contextmenu(menu);
   });
-  var def = new $.Deferred();
-  def.done(function(){
-    if (gdir && gdir != '') {
-      var clone = document.importNode(document.querySelector('#up').content,true);
-      $('[data-class=name] a',clone).text('..');
-      $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=');
-      $('#models tbody').append(clone);
-    }
-    $.ajax({
-      type: "GET",
-      url: "server/" + gdir,
-      data: { stage: gstage },
-      success: function(res) {
-        $(res).each(function(k,data) {
-          if (data.type == 'dir') {
-            var clone = document.importNode(document.querySelector('#folder').content,true);
-            $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
-            $('[data-class=name]',clone).attr('data-full-name',data['name']);
-            $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=' + data['name']);
-          } else {
-            var clone = document.importNode(document.querySelector('#model').content,true);
-            $('[data-class=name] a',clone).text(data['name']);
-            $('[data-class=name]',clone).attr('data-full-name',data['name']);
-            $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
-          }
-          $('[data-class=creator]',clone).text(data['creator']);
-          $('[data-class=author]',clone).text(data['author']);
-          $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
-          $('#models tbody').append(clone);
-        });
-      }
-    });
-  });
+
   history.pushState({}, document.title, window.location.pathname + '?stage=' + gstage + '&dir=' + gdir);
-  if (urlParams.has('new')) {
+  paint(gdir,gstage);
+
+  $('#newmod').on('submit',(e) => {
     $.ajax({
       type: "POST",
       url: "server/" + gdir,
-      data: { stage: gstage, new: urlParams.get('new') },
-      success: function() { def.resolve(); },
-      error: function() { def.reject(); }
+      data: { stage: gstage, new: $("#newmod input[name=new]").val() },
+      success: (r) => {
+        ui_activate_tab($('ui-tab').first());
+      }
     });
-  } else {
-    def.resolve();
-  }
-  if (urlParams.has('newdir')) {
+    return false;
+  });
+
+  $('#newdir').on('submit',(e) => {
     $.ajax({
       type: "POST",
       url: "server/",
-      data: { dir: urlParams.get('newdir') },
-      success: function() { def.resolve(); },
-      error: function() { def.reject(); }
+      data: { dir: $("#newdir input[name=newdir]").val() },
+      success: (r) => {
+        ui_activate_tab($('ui-tab').first());
+      }
     });
-  } else {
-    def.resolve();
-  }
+    return false;
+  });
 });
