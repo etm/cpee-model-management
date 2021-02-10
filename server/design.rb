@@ -232,9 +232,10 @@ class Create < Riddl::Implementation #{{{
     end
     views = @a[2]
     conns = @a[3]
+    templates = @a[4]
 
     name = @p[0].value
-    source = @p[1] ? File.join('models',where,@p[1].value) : 'testset.xml'
+    source = @p[1] ? File.join('models',where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
     fname = File.join('models',where,name + '.xml')
 
     stage = File.read(source + '.stage') if stage.nil? && File.exists?(source + '.stage')
@@ -440,14 +441,14 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
   on resource do
     run GetList, :main, @riddl_opts[:views] if get 'stage'
     run GetListFull, @riddl_opts[:views] if get 'full'
-    run Create, :main, :cre, @riddl_opts[:views], @riddl_opts[:connections] if post 'item'
-    run Create, :main, :dup, @riddl_opts[:views], @riddl_opts[:connections] if post 'duplicate'
+    run Create, :main, :cre, @riddl_opts[:views], @riddl_opts[:connections], @riddl_opts[:templates] if post 'item'
+    run Create, :main, :dup, @riddl_opts[:views], @riddl_opts[:connections], @riddl_opts[:templates] if post 'duplicate'
     run CreateDir, @riddl_opts[:connections] if post 'dir'
     run Active, @riddl_opts[:connections] if sse
     on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
       run GetList, :sub, @riddl_opts[:views] if get 'stage'
-      run Create, :sub, :cre, @riddl_opts[:views], @riddl_opts[:connections] if post 'item'
-      run Create, :sub, :dup, @riddl_opts[:views], @riddl_opts[:connections] if post 'duplicate'
+      run Create, :sub, :cre, @riddl_opts[:views], @riddl_opts[:connections], @riddl_opts[:templates] if post 'item'
+      run Create, :sub, :dup, @riddl_opts[:views], @riddl_opts[:connections], @riddl_opts[:templates] if post 'duplicate'
       run DeleteDir, @riddl_opts[:connections] if delete
       run RenameDir, @riddl_opts[:connections] if put 'name'
       on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
