@@ -46,6 +46,10 @@ def op(author,op,new,old=nil) #{{{
         `git rm -rf "#{fname}.author" 2>/dev/null`
         `git rm -rf "#{fname}.creator" 2>/dev/null`
         `git rm -rf "#{fname}.stage" 2>/dev/null`
+      when 'shift'
+        fname = new
+        `git rm -rf "#{fname}.active" 2>/dev/null`
+        `git rm -rf "#{fname}.active-uuid" 2>/dev/null`
     end
     fname = new
     `git add "#{fname}" 2>/dev/null`
@@ -75,6 +79,10 @@ def op(author,op,new,old=nil) #{{{
         File.delete(fname + '.author') rescue nil
         File.delete(fname + '.creator') rescue nil
         File.delete(fname + '.stage') rescue nil
+      when 'shift'
+        fname = File.join('models',new)
+        File.delete(fname + '.active') rescue nil
+        File.delete(fname + '.active-uuid') rescue nil
     end
   end
 end #}}}
@@ -137,6 +145,45 @@ class GetListFull < Riddl::Implementation #{{{
     end.compact.uniq.sort_by{ |e| e[:name] }
 
     Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
+  end
+end #}}}
+class GetStages < Riddl::Implementation #{{{
+  def response
+    themes = @a[0]
+    Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(themes&.keys || []))
+  end
+end #}}}
+
+class ShiftItem < Riddl::Implementation #{{{
+  def response
+    where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+    conns = @a[1]
+    themes = @a[2]
+    name  = File.basename(@r.last,'.xml')
+    nstage = @p[0].value
+    fname  = File.join('models',where,name + '.xml')
+
+    dn = get_dn @h['DN']
+    author = dn['GN'] + ' ' + dn['SN']
+
+    XML::Smart::modify(fname) do |doc|
+      doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
+      doc.find('/p:testset/p:attributes/p:author').each do |ele|
+        ele.text = author
+      end
+      doc.find('/p:testset/p:attributes/p:design_stage').each do |ele|
+        ele.text = nstage
+      end
+      doc.find('/p:testset/p:attributes/p:theme').each do |ele|
+        ele.text = themes[nstage] || 'model'
+      end
+    end
+    File.write(fname + '.author',author)
+    File.write(fname + '.stage',nstage)
+
+    op author, 'shift', File.join('.', where, name + '.xml'), File.join('.', where, name + '.xml')
+    notify conns, 'shift', fname, fname
+    nil
   end
 end #}}}
 
@@ -441,6 +488,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
   on resource do
     run GetList, :main, @riddl_opts[:views] if get 'stage'
     run GetListFull, @riddl_opts[:views] if get 'full'
+    run GetStages, @riddl_opts[:themes] if get 'stages'
     run Create, :main, :cre, @riddl_opts[:views], @riddl_opts[:connections], @riddl_opts[:templates] if post 'item'
     run Create, :main, :dup, @riddl_opts[:views], @riddl_opts[:connections], @riddl_opts[:templates] if post 'duplicate'
     run CreateDir, @riddl_opts[:connections] if post 'dir'
@@ -457,6 +505,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
         run PutItem, :sub, @riddl_opts[:connections] if put 'content'
         run RenameItem, :sub, @riddl_opts[:connections] if put 'name'
         run MoveItem, :sub, @riddl_opts[:connections] if put 'dirname'
+        run ShiftItem, :sub, @riddl_opts[:connections], @riddl_opts[:themes] if put 'newstage'
         on resource 'open' do
           run OpenItem, :sub, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views], false if get 'stage'
         end
@@ -471,6 +520,7 @@ server = Riddl::Server.new(File.join(__dir__,'/design.xml'), :host => 'localhost
       run PutItem, :main, @riddl_opts[:connections] if put 'content'
       run RenameItem, :main, @riddl_opts[:connections] if put 'name'
       run MoveItem, :main, @riddl_opts[:connections] if put 'dirname'
+      run ShiftItem, :main, @riddl_opts[:connections], @riddl_opts[:themes] if put 'newstage'
       on resource 'open' do
         run OpenItem, :main, @riddl_opts[:instantiate], @riddl_opts[:cockpit], @riddl_opts[:views], false if get 'stage'
       end

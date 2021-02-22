@@ -1,12 +1,7 @@
 <description xmlns="http://riddl.org/ns/description/1.0" xmlns:ann="http://riddl.org/ns/annotation/1.0" xmlns:xi="http://www.w3.org/2001/XInclude" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
   <message name="item">
     <parameter name="stage" type="string">
-      <choice>
-        <value>draft</value>
-        <value>development</value>
-        <value>production</value>
-        <value>archive</value>
-      </choice>
+      <xi:include href="design.stages"/>
     </parameter>
     <parameter name="new" type="string">
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
@@ -35,15 +30,18 @@
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+\.xml</param>
     </parameter>
   </message>
+  <message name="stages">
+    <parameter name="stages" type="string"/>
+  </message>
+  <message name="newstage">
+    <parameter name="stage" type="string">
+      <xi:include href="design.stages"/>
+    </parameter>
+  </message>
   <message name="stage">
     <optional>
       <parameter name="stage" type="string">
-        <choice>
-          <value>draft</value>
-          <value>development</value>
-          <value>production</value>
-          <value>archive</value>
-        </choice>
+        <xi:include href="design.stages"/>
       </parameter>
     </optional>
   </message>
@@ -51,12 +49,7 @@
     <parameter name="full" type="string"/>
     <optional>
       <parameter name="stage" type="string">
-        <choice>
-          <value>draft</value>
-          <value>development</value>
-          <value>production</value>
-          <value>archive</value>
-        </choice>
+        <xi:include href="design.stages"/>
       </parameter>
     </optional>
   </message>
@@ -72,6 +65,7 @@
     <post in="duplicate"/>
     <get in="stage" out="list"/>
     <get in="full" out="list"/>
+    <get in="stages" out="list"/>
     <sse/>
     <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.dir">
       <post in="item"/>
@@ -85,6 +79,7 @@
         <put in="content"/>
         <put in="name"/> <!-- rename -->
         <put in="dirname"/> <!-- move -->
+        <put in="newstage"/> <!-- shift -->
         <resource relative="open"><get in="stage"/></resource>
         <resource relative="open-new"><get in="stage"/></resource>
       </resource>
@@ -95,6 +90,7 @@
       <put in="content"/>
       <put in="name"/> <!-- rename -->
       <put in="dirname"/> <!-- move -->
+      <put in="newstage"/> <!-- shift -->
       <resource relative="open"><get in="stage"/></resource>
       <resource relative="open-new"><get in="stage"/></resource>
     </resource>

@@ -1,0 +1,6 @@
+<choice>
+  <value>draft</value>
+  <value>development</value>
+  <value>production</value>
+  <value>archive</value>
+</choice>

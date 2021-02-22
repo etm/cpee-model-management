@@ -8,6 +8,13 @@ function move_it(name,todir) {
     data: { dir: todir }
   });
 }
+function shift_it(name,to) {
+  $.ajax({
+    type: "PUT",
+    url: "server/" + gdir + name,
+    data: { stage: to }
+  });
+}
 function rename_it(name) {
   var newname;
   if (newname = prompt('New name please!',name.replace(/\.xml$/,'').replace(/\.dir$/,''))) {
@@ -117,6 +124,16 @@ $(document).ready(function() {
       dragged = undefined;
     }
   });
+  var shifts = []
+  $.ajax({
+    type: "GET",
+    url: "server/",
+    data: { stages: 'stages' },
+    success: (r) => {
+      shifts = shifts.concat(r);
+      shifts = shifts.filter(item => item !== gstage);
+    }
+  });
   $('#models').on('click','td[data-class=ops]',(e) => {
     var menu = {};
     var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');
@@ -147,6 +164,21 @@ $(document).ready(function() {
         }
       );
     }
+    if (shifts.length > 0) {
+      menu['Shifting'] = [];
+      shifts.forEach(ele => {
+        menu['Shifting'].push(
+          {
+            'label': 'Shift to ' + ele,
+            'function_call': shift_it,
+            'text_icon': '➔',
+            'type': undefined,
+            'params': [name,ele]
+          }
+        );
+      });
+    }
+    console.log(shifts);
     new CustomMenu(e).contextmenu(menu);
   });
 
