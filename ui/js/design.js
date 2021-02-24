@@ -81,6 +81,7 @@ function paint(gdir,gstage) {
           $('[data-class=name] a',clone).text(data['name']);
           $('[data-class=name]',clone).attr('data-full-name',data['name']);
           $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
+          $('[data-class=raw] a',clone).attr('href','server/' + gdir + data['name']);
         }
         $('[data-class=creator]',clone).text(data['creator']);
         $('[data-class=author]',clone).text(data['author']);
