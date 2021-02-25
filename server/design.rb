@@ -346,11 +346,12 @@ class OpenItem < Riddl::Implementation #{{{
     insta  = @a[1]
     cock   = @a[2]
     views  = @a[3]
+    force  = @a[4]
     stage  = @p[0]&.value || 'draft'
 
     fname  = File.join('models',where,name + '.xml')
 
-    inst = if File.exists?(fname + '.active') && File.exists?(fname + '.active-uuid')
+    inst = if File.exists?(fname + '.active') && File.exists?(fname + '.active-uuid') && !force
       t = {
         'CPEE-INSTANCE-URL'  => File.read(fname + '.active'),
         'CPEE-INSTANCE-UUID' => File.read(fname + '.active-uuid')
