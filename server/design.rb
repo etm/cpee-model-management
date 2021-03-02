@@ -351,30 +351,41 @@ class OpenItem < Riddl::Implementation #{{{
 
     fname  = File.join('models',where,name + '.xml')
 
-    inst = if File.exists?(fname + '.active') && File.exists?(fname + '.active-uuid') && !force
-      t = {
-        'CPEE-INSTANCE-URL'  => File.read(fname + '.active'),
-        'CPEE-INSTANCE-UUID' => File.read(fname + '.active-uuid')
-      }
-      status, result, headers = Riddl::Client.new(File.join(t['CPEE-INSTANCE-URL'],'properties','attributes','uuid')).get
-      if status && status >= 200 && status < 300
-        t['CPEE-INSTANCE-UUID'] == result[0].value ? t : nil
-      else
-        nil
-      end
-    end || begin
-      status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
-        Riddl::Parameter::Simple.new('behavior','fork_ready'),
-        Riddl::Parameter::Complex.new('xml','application/xml',File.read(fname))
-      ] rescue nil
-      if status && status >= 200 && status < 300
-        JSON::parse(result[0].value.read).tap do |t|
-          File.write(File.join(fname + '.active'),t['CPEE-INSTANCE-URL'])
-          File.write(File.join(fname + '.active-uuid'),t['CPEE-INSTANCE-UUID'])
+    inst = nil
+    begin
+      inst = if File.exists?(fname + '.active') && File.exists?(fname + '.active-uuid') && !force
+        t = {
+          'CPEE-INSTANCE-URL'  => File.read(fname + '.active'),
+          'CPEE-INSTANCE-UUID' => File.read(fname + '.active-uuid')
+        }
+        status, result, headers = Riddl::Client.new(File.join(t['CPEE-INSTANCE-URL'],'properties','state')).get
+
+        if status && status >= 200 && status < 300 && (result[0].value == 'finished' || result[0].value == 'abandoned')
+          force = true
+          raise
         end
-      else
-        nil
+        status, result, headers = Riddl::Client.new(File.join(t['CPEE-INSTANCE-URL'],'properties','attributes','uuid')).get
+        if status && status >= 200 && status < 300
+          t['CPEE-INSTANCE-UUID'] == result[0].value ? t : nil
+        else
+          nil
+        end
+      end || begin
+        status, result, headers = Riddl::Client.new(File.join(insta,'xml')).post [
+          Riddl::Parameter::Simple.new('behavior','fork_ready'),
+          Riddl::Parameter::Complex.new('xml','application/xml',File.read(fname))
+        ] rescue nil
+        if status && status >= 200 && status < 300
+          JSON::parse(result[0].value.read).tap do |t|
+            File.write(File.join(fname + '.active'),t['CPEE-INSTANCE-URL'])
+            File.write(File.join(fname + '.active-uuid'),t['CPEE-INSTANCE-UUID'])
+          end
+        else
+          nil
+        end
       end
+    rescue
+      retry
     end
 
     if inst.nil?
