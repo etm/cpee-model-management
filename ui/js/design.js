@@ -193,7 +193,7 @@ $(document).ready(function() {
       url: "server/" + gdir,
       data: { stage: gstage, new: $("#newmod input[name=new]").val() },
       success: (r) => {
-        ui_activate_tab($('ui-tab').first());
+        uidash_activate_tab($('ui-tab').first());
       }
     });
     return false;
@@ -205,7 +205,7 @@ $(document).ready(function() {
       url: "server/",
       data: { dir: $("#newdir input[name=newdir]").val() },
       success: (r) => {
-        ui_activate_tab($('ui-tab').first());
+        uidash_activate_tab($('ui-tab').first());
       }
     });
     return false;
