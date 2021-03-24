@@ -13,7 +13,7 @@
 # Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along with
-# CPEE-MODEL-MANAGEMENT (file COPYING in the main directory). If not, see
+# CPEE-MODEL-MANAGEMENT (file LICENSE in the main directory). If not, see
 # <http://www.gnu.org/licenses/>.
 
 require 'rubygems'
