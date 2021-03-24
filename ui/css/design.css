@@ -25,27 +25,27 @@ ui-behind {
   font-weight: bold;
 }
 
-[is="x-ui"] table.ui-table {
+[is="x-ui-"] table.ui-table {
   border-collapse: collapse;
 }
-[is="x-ui"] table.ui-table thead th {
+[is="x-ui-"] table.ui-table thead th {
   font-weight: bold;
   text-align: left;
   padding: 0.3em 0.5em;
 }
-[is="x-ui"] table.ui-table tbody td {
+[is="x-ui-"] table.ui-table tbody td {
   padding: 0.1em 0.5em;
 }
-[is="x-ui"] table.ui-table tbody tr:nth-child(odd) td {
+[is="x-ui-"] table.ui-table tbody tr:nth-child(odd) td {
   background-color: var(--x-ui-content-light-background);
 }
-[is="x-ui"] table.ui-table tbody tr:hover td {
+[is="x-ui-"] table.ui-table tbody tr:hover td {
   background-color: var(--x-ui-content-hover-background);
 }
 
-[is="x-ui"] table.ui-table tbody tr:nth-child(odd) td[data-class=ops] {
+[is="x-ui-"] table.ui-table tbody tr:nth-child(odd) td[data-class=ops] {
   background-color: #d0d0d0;
 }
-[is="x-ui"] table.ui-table tbody tr:hover td[data-class=ops] {
+[is="x-ui-"] table.ui-table tbody tr:hover td[data-class=ops] {
   background-color: #99cee6b0;
 }
