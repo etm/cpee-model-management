@@ -1,7 +1,7 @@
 <description xmlns="http://riddl.org/ns/description/1.0" xmlns:ann="http://riddl.org/ns/annotation/1.0" xmlns:xi="http://www.w3.org/2001/XInclude" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
   <message name="item">
     <parameter name="stage" type="string">
-      <xi:include href="design.stages"/>
+      <xi:include href="stages"/>
     </parameter>
     <parameter name="new" type="string">
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
@@ -35,13 +35,13 @@
   </message>
   <message name="newstage">
     <parameter name="stage" type="string">
-      <xi:include href="design.stages"/>
+      <xi:include href="stages"/>
     </parameter>
   </message>
   <message name="stage">
     <optional>
       <parameter name="stage" type="string">
-        <xi:include href="design.stages"/>
+        <xi:include href="stages"/>
       </parameter>
     </optional>
   </message>
@@ -49,7 +49,7 @@
     <parameter name="full" type="string"/>
     <optional>
       <parameter name="stage" type="string">
-        <xi:include href="design.stages"/>
+        <xi:include href="stages"/>
       </parameter>
     </optional>
   </message>

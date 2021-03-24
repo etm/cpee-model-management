@@ -1,0 +1,16 @@
+#!/usr/bin/ruby
+require 'rubygems'
+require_relative '../lib/cpee-model-management/implementation'
+
+options = {
+  :host => 'localhost',
+  :port => 9316,
+  :secure => false
+}
+
+Riddl::Server.new(CPEE::ModelManagement::SERVER, options) do |opts|
+  accessible_description true
+  cross_site_xhr true
+
+  use CPEE::ModelManagement::implementation(opts)
+end.loop!
