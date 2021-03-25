@@ -123,9 +123,11 @@ elsif command == 'convert'
   end
 elsif command == 'new'
   if !File.exists?(p1)
-    FileUtils.cp_r("#{curpath}/server/design.rb",p1)
-    FileUtils.cp_r("#{curpath}/server/design.conf",p1) unless File.exists?(File.join('p1','design.conf'))
-    FileUtils.cp_r("#{curpath}/server/testset.xml",p1) unless File.exists?(File.join('p1','testset.xml'))
+    FileUtils.mkdir(File.join(p1)) rescue nil
+    FileUtils.cp_r("#{curpath}/../server/moma",p1) unless File.exists?(File.join('p1','moma'))
+    FileUtils.cp_r("#{curpath}/../server/moma.conf",p1) unless File.exists?(File.join('p1','moma.conf'))
+    FileUtils.cp_r("#{curpath}/../server/testset.xml",p1) unless File.exists?(File.join('p1','testset.xml'))
+    FileUtils.cp_r("#{curpath}/../server/model.xml",p1) unless File.exists?(File.join('p1','model.xml'))
     FileUtils.mkdir(File.join(p1,'models')) rescue nil
   else
     puts 'Directory already exists.'

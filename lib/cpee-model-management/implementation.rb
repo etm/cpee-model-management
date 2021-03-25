@@ -28,7 +28,7 @@ module CPEE
 
     SERVER = File.expand_path(File.join(__dir__,'moma.xml'))
 
-    def op(author,op,models,new,old=nil) #{{{
+    def self::op(author,op,models,new,old=nil) #{{{
       if File.exists?(File.join(models,'.git'))
         cdir = Dir.pwd
         Dir.chdir(models)
@@ -91,14 +91,14 @@ module CPEE
         end
       end
     end #}}}
-    def get_dn(dn) #{{{
+    def self::get_dn(dn) #{{{
       if dn
         dn.split(',').map{ |e| e.split('=',2) }.to_h
       else
         { 'GN' => 'Christine', 'SN' => 'Ashcreek' }
       end
     end #}}}
-    def notify(conns,op,models,f,s=nil) #{{{
+    def self::notify(conns,op,models,f,s=nil) #{{{
       what = if f =~ /\.dir$/
         if  op == 'delete'
           { :op => op, :type => :dir, :name => File.basename(f) }
@@ -171,7 +171,7 @@ module CPEE
         nstage = @p[0].value
         fname  = File.join(models,where,name + '.xml')
 
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
         XML::Smart::modify(fname) do |doc|
@@ -189,8 +189,8 @@ module CPEE
         File.write(fname + '.author',author)
         File.write(fname + '.stage',nstage)
 
-        op author, 'shift', models, File.join('.', where, name + '.xml'), File.join('.', where, name + '.xml')
-        notify conns, 'shift', models, fname, fname
+        CPEE::ModelManagement::op author, 'shift', models, File.join('.', where, name + '.xml'), File.join('.', where, name + '.xml')
+        CPEE::ModelManagement::notify conns, 'shift', models, fname, fname
         nil
       end
     end #}}}
@@ -211,7 +211,7 @@ module CPEE
           fnname = File.join(models,where,nname + counter.to_s + '.xml')
         end
 
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
         XML::Smart::modify(fname) do |doc|
@@ -225,8 +225,8 @@ module CPEE
         end
         File.write(fname + '.author',author)
 
-        op author, 'mv', models, File.join('.', where, nname + '.xml'), File.join('.', where, name + '.xml')
-        notify conns, 'rename', models, fnname, fname
+        CPEE::ModelManagement::op author, 'mv', models, File.join('.', where, nname + '.xml'), File.join('.', where, name + '.xml')
+        CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
         nil
       end
     end #}}}
@@ -244,12 +244,12 @@ module CPEE
           fnname = File.join(models,nname + counter.to_s + '.dir')
         end
 
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
         File.write(fname + '.author',author)
 
-        op author, 'mv', models, File.join(nname + '.dir'), File.join(name + '.dir')
-        notify conns, 'rename', models, fnname, fname
+        CPEE::ModelManagement::op author, 'mv', models, File.join(nname + '.dir'), File.join(name + '.dir')
+        CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
         nil
       end
     end #}}}
@@ -267,7 +267,7 @@ module CPEE
           fname = File.join(models,name + counter.to_s + '.dir')
         end
 
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
         creator = dn['GN'] + ' ' + dn['SN']
 
         Dir.mkdir(fname)
@@ -275,8 +275,8 @@ module CPEE
         File.write(fname + '.creator',creator)
         File.write(fname + '.author',creator)
 
-        op creator, 'add', models, name + '.dir'
-        notify conns, 'create', models, fname
+        CPEE::ModelManagement::op creator, 'add', models, name + '.dir'
+        CPEE::ModelManagement::notify conns, 'create', models, fname
         nil
       end
     end #}}}
@@ -306,7 +306,7 @@ module CPEE
           fname = File.join(models,where,name + counter.to_s + '.xml')
         end
 
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
         creator = dn['GN'] + ' ' + dn['SN']
         FileUtils.cp(source,fname)
         XML::Smart::modify(fname) do |doc|
@@ -333,8 +333,8 @@ module CPEE
         File.write(fname + '.author',creator)
         File.write(fname + '.stage',stage)
 
-        op creator, 'add', models, File.join('.', where, name + '.xml')
-        notify conns, 'create', models, fname
+        CPEE::ModelManagement::op creator, 'add', models, File.join('.', where, name + '.xml')
+        CPEE::ModelManagement::notify conns, 'create', models, fname
         nil
       end
     end #}}}
@@ -423,7 +423,7 @@ module CPEE
         to = @p[0].value
 
         fname = File.join(models,where,name + '.xml')
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
         if !File.exist?(File.join(models,to,name + '.xml'))
           XML::Smart::modify(fname) do |doc|
@@ -434,8 +434,8 @@ module CPEE
           end
           File.write(fname + '.author',author)
 
-          op author, 'mv', models, File.join('.', to, name + '.xml'), File.join('.', where, name + '.xml')
-          notify conns, 'move', models, File.join(models,to,name + '.xml'), fname
+          CPEE::ModelManagement::op author, 'mv', models, File.join('.', to, name + '.xml'), File.join('.', where, name + '.xml')
+          CPEE::ModelManagement::notify conns, 'move', models, File.join(models,to,name + '.xml'), fname
         end
       end
     end #}}}
@@ -446,7 +446,7 @@ module CPEE
         models = @a[2]
         name  = File.basename(@r.last,'.xml')
         cont = @p[0].value.read
-        dn = get_dn @h['DN']
+        dn = CPEE::ModelManagement::get_dn @h['DN']
 
         fname = File.join(models,where,name + '.xml')
 
@@ -466,8 +466,8 @@ module CPEE
             File.write(fname + '.author',author)
             File.write(fname + '.stage',doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft'))
           end
-          op author, 'add', models, File.join('.', where, name + '.xml')
-          notify conns, 'put', models, fname
+          CPEE::ModelManagement::op author, 'add', models, File.join('.', where, name + '.xml')
+          CPEE::ModelManagement::notify conns, 'put', models, fname
         else
           @status = 400
         end
@@ -481,11 +481,11 @@ module CPEE
         name  = File.basename(@r.last,'.xml')
         fname = File.join(models,where,name + '.xml')
 
-        dn     = get_dn @h['DN']
+        dn     = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
-        op author, 'rm', models, File.join('.', where, name + '.xml')
-        notify conns, 'delete', models, fname
+        CPEE::ModelManagement::op author, 'rm', models, File.join('.', where, name + '.xml')
+        CPEE::ModelManagement::notify conns, 'delete', models, fname
       end
     end #}}}
     class DeleteDir < Riddl::Implementation #{{{
@@ -495,11 +495,11 @@ module CPEE
         name  = File.basename(@r.last,'.dir')
         fname = File.join(models,name + '.dir')
 
-        dn     = get_dn @h['DN']
+        dn     = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
-        op author, 'rm', models, File.join(name + '.dir')
-        notify conns, 'delete', models, fname
+        CPEE::ModelManagement::op author, 'rm', models, File.join(name + '.dir')
+        CPEE::ModelManagement::notify conns, 'delete', models, fname
       end
     end #}}}
 
