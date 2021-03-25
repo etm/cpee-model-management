@@ -22,7 +22,6 @@ form input {
 
 ui-behind {
   text-transform: capitalize;
-  font-weight: bold;
 }
 
 [is="x-ui-"] table.ui-table {
