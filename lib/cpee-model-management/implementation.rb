@@ -36,12 +36,12 @@ module CPEE
       p2 = Pathname.new(File.dirname(new))
       old = File.basename(old)
       new = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
-      `git mv "#{old}"                      "#{new}" 2>/dev/null`
-      `git rm -rf "#{old + '.active'}"      "#{new + '.active'}" 2>/dev/null`
-      `git rm -rf "#{old + '.active-uuid'}" "#{new + '.active-uuid'}" 2>/dev/null`
-      `git mv "#{old + '.author'}"          "#{new + '.author'}" 2>/dev/null`
-      `git mv "#{old + '.creator'}"         "#{new + '.creator'}" 2>/dev/null`
-      `git mv "#{old + '.stage'}"           "#{new + '.stage'}" 2>/dev/null`
+      `git mv     "#{old}"                      "#{new}"              2>/dev/null`
+      `git rm -rf "#{old + '.active'}"                                2>/dev/null`
+      `git rm -rf "#{old + '.active-uuid'}"                           2>/dev/null`
+      `git mv     "#{old + '.author'}"          "#{new + '.author'}"  2>/dev/null`
+      `git mv     "#{old + '.creator'}"         "#{new + '.creator'}" 2>/dev/null`
+      `git mv     "#{old + '.stage'}"           "#{new + '.stage'}"   2>/dev/null`
       Dir.chdir(cdir)
     end
     def self::git_rm(models,new)
@@ -50,18 +50,18 @@ module CPEE
       new = File.basename(new)
       `git rm -rf "#{new}" 2>/dev/null`
        FileUtils.rm_rf(new)
-      `git rm -rf "#{new}.active" 2>/dev/null`
+      `git rm -rf "#{new}.active"      2>/dev/null`
       `git rm -rf "#{new}.active-uuid" 2>/dev/null`
-      `git rm -rf "#{new}.author" 2>/dev/null`
-      `git rm -rf "#{new}.creator" 2>/dev/null`
-      `git rm -rf "#{new}.stage" 2>/dev/null`
+      `git rm -rf "#{new}.author"      2>/dev/null`
+      `git rm -rf "#{new}.creator"     2>/dev/null`
+      `git rm -rf "#{new}.stage"       2>/dev/null`
       Dir.chdir(cdir)
     end
     def self::git_shift(models,new)
       cdir = Dir.pwd
       Dir.chdir(File.join(models,File.dirname(new)))
       new = File.basename(new)
-      `git rm -rf "#{new}.active" 2>/dev/null`
+      `git rm -rf "#{new}.active"      2>/dev/null`
       `git rm -rf "#{new}.active-uuid" 2>/dev/null`
       Dir.chdir(cdir)
     end
