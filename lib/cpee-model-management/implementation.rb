@@ -22,72 +22,134 @@ require 'riddl/server'
 require 'riddl/client'
 require 'riddl/protocols/utils'
 require 'fileutils'
+require 'pathname'
 
 module CPEE
   module ModelManagement
 
     SERVER = File.expand_path(File.join(__dir__,'moma.xml'))
 
+    def self::git_mv(models,old,new)
+      cdir = Dir.pwd
+      Dir.chdir(File.join(models,File.dirname(old)))
+      p1 = Pathname.new(File.dirname(old))
+      p2 = Pathname.new(File.dirname(new))
+      old = File.basename(old)
+      new = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
+      `git mv "#{old}"                      "#{new}" 2>/dev/null`
+      `git rm -rf "#{old + '.active'}"      "#{new + '.active'}" 2>/dev/null`
+      `git rm -rf "#{old + '.active-uuid'}" "#{new + '.active-uuid'}" 2>/dev/null`
+      `git mv "#{old + '.author'}"          "#{new + '.author'}" 2>/dev/null`
+      `git mv "#{old + '.creator'}"         "#{new + '.creator'}" 2>/dev/null`
+      `git mv "#{old + '.stage'}"           "#{new + '.stage'}" 2>/dev/null`
+      Dir.chdir(cdir)
+    end
+    def self::git_rm(models,new)
+      cdir = Dir.pwd
+      Dir.chdir(File.join(models,File.dirname(new)))
+      new = File.basename(new)
+      `git rm -rf "#{new}" 2>/dev/null`
+       FileUtils.rm_rf(new)
+      `git rm -rf "#{new}.active" 2>/dev/null`
+      `git rm -rf "#{new}.active-uuid" 2>/dev/null`
+      `git rm -rf "#{new}.author" 2>/dev/null`
+      `git rm -rf "#{new}.creator" 2>/dev/null`
+      `git rm -rf "#{new}.stage" 2>/dev/null`
+      Dir.chdir(cdir)
+    end
+    def self::git_shift(models,new)
+      cdir = Dir.pwd
+      Dir.chdir(File.join(models,File.dirname(new)))
+      new = File.basename(new)
+      `git rm -rf "#{new}.active" 2>/dev/null`
+      `git rm -rf "#{new}.active-uuid" 2>/dev/null`
+      Dir.chdir(cdir)
+    end
+    def self::git_commit(models,new,author)
+      Process.fork do
+        exec 'ruby', File.join(__dir__,'commit.rb'), File.realpath(models), new, author
+      end
+    end
+    def self::fs_mv(models,old,new)
+      fname = File.join(models,old)
+      fnname = File.join(models,new)
+      FileUtils.mv(fname,fnname)
+      File.delete(fname + '.active',fnname + '.active') rescue nil
+      File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
+      FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
+      FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
+      FileUtils.mv(fname + '.stage',fnname + '.stage') rescue nil
+    end
+    def self::fs_cp(models,old,new)
+      fname = File.join(models,old)
+      fnname = File.join(models,new)
+      FileUtils.cp(fname,fnname)
+      File.delete(fname + '.active',fnname + '.active') rescue nil
+      File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
+      FileUtils.cp(fname + '.author',fnname + '.author') rescue nil
+      FileUtils.cp(fname + '.creator',fnname + '.creator') rescue nil
+      FileUtils.cp(fname + '.stage',fnname + '.stage') rescue nil
+    end
+    def self::fs_rm(models,new)
+      fname = File.join(models,new)
+      FileUtils.rm_rf(fname)
+      File.delete(fname + '.active') rescue nil
+      File.delete(fname + '.active-uuid') rescue nil
+      File.delete(fname + '.author') rescue nil
+      File.delete(fname + '.creator') rescue nil
+      File.delete(fname + '.stage') rescue nil
+    end
+    def self::fs_shift(models,new)
+      fname = File.join(models,new)
+      File.delete(fname + '.active') rescue nil
+      File.delete(fname + '.active-uuid') rescue nil
+      Dir.chdir(cdir)
+    end
+
+    def self::git_dir(models,file)
+      return nil if file.nil?
+      cdir = Dir.pwd
+      tdir = File.dirname(file)
+      Dir.chdir(File.join(models,tdir))
+      res = `git rev-parse --absolute-git-dir 2>/dev/null`
+      Dir.chdir(cdir)
+      res == '' ? nil : res
+    end
+
     def self::op(author,op,models,new,old=nil) #{{{
-      if File.exists?(File.join(models,'.git'))
-        cdir = Dir.pwd
-        Dir.chdir(models)
-        case op
-          when 'mv'
-            fname  = old
-            fnname = new
-            `git mv "#{fname}"                  "#{fnname}" 2>/dev/null`
-            `git rm -rf "#{fname + '.active'}"      "#{fnname + '.active'}" 2>/dev/null`
-            `git rm -rf "#{fname + '.active-uuid'}" "#{fnname + '.active-uuid'}" 2>/dev/null`
-            `git mv "#{fname + '.author'}"      "#{fnname + '.author'}" 2>/dev/null`
-            `git mv "#{fname + '.creator'}"     "#{fnname + '.creator'}" 2>/dev/null`
-            `git mv "#{fname + '.stage'}"       "#{fnname + '.stage'}" 2>/dev/null`
-          when 'rm'
-            fname = new
-            `git rm -rf "#{fname}" 2>/dev/null`
-             FileUtils.rm_rf(fname)
-            `git rm -rf "#{fname}.active" 2>/dev/null`
-            `git rm -rf "#{fname}.active-uuid" 2>/dev/null`
-            `git rm -rf "#{fname}.author" 2>/dev/null`
-            `git rm -rf "#{fname}.creator" 2>/dev/null`
-            `git rm -rf "#{fname}.stage" 2>/dev/null`
-          when 'shift'
-            fname = new
-            `git rm -rf "#{fname}.active" 2>/dev/null`
-            `git rm -rf "#{fname}.active-uuid" 2>/dev/null`
+      git_ndir = CPEE::ModelManagement::git_dir(models,new)
+      git_odir = CPEE::ModelManagement::git_dir(models,old)
+
+      if op == 'rm' && !git_ndir.nil?
+        git_rm models, new
+        git_commit models, new, author
+      elsif op == 'shift' && !git_ndir.nil?
+        git_shift models, new
+        git_commit models, new, author
+      elsif op == 'mv' && (!git_ndir.nil? || !git_odir.nil?)
+        if git_ndir == git_odir
+          git_mv models, old, new
+          git_commit models, new, author
+        elsif git_ndir != git_odir && !git_ndir.nil? && !git_odir.nil?
+          fs_cp models, old, new
+          git_rm models, old
+          git_commit models, old, author
+          git_commit models, new, author
+        elsif git_ndir != git_odir && git_ndir.nil?
+          fs_cp models, old, new
+          git_rm models, old
+          git_commit models, old, author
+        elsif git_ndir != git_odir && git_odir.nil?
+          fs_mv models, old, new
+          git_commit models, new, author
         end
-        fname = new
-        `git add "#{fname}" 2>/dev/null`
-        `git add "#{fname}.active" 2>/dev/null`
-        `git add "#{fname}.active-uuid" 2>/dev/null`
-        `git add "#{fname}.author" 2>/dev/null`
-        `git add "#{fname}.creator" 2>/dev/null`
-        `git add "#{fname}.stage" 2>/dev/null`
-        `git commit -m "#{author.gsub(/"/,"'")}"`
-        Dir.chdir(cdir)
+      elsif !git_ndir.nil?
+        git_commit models, new, author
       else
         case op
-          when 'mv'
-            fname = File.join(models,old)
-            fnname = File.join(models,new)
-            FileUtils.mv(fname,fnname)
-            File.delete(fname + '.active',fnname + '.active') rescue nil
-            File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
-            FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
-            FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
-            FileUtils.mv(fname + '.stage',fnname + '.stage') rescue nil
-          when 'rm'
-            fname = File.join(models,new)
-            FileUtils.rm_rf(fname)
-            File.delete(fname + '.active') rescue nil
-            File.delete(fname + '.active-uuid') rescue nil
-            File.delete(fname + '.author') rescue nil
-            File.delete(fname + '.creator') rescue nil
-            File.delete(fname + '.stage') rescue nil
-          when 'shift'
-            fname = File.join(models,new)
-            File.delete(fname + '.active') rescue nil
-            File.delete(fname + '.active-uuid') rescue nil
+          when 'mv'; fs_mv(models,old,new)
+          when 'rm'; fs_rm(models,new)
+          when 'shift'; fs_shift(models,new)
         end
       end
     end #}}}

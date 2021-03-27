@@ -53,6 +53,7 @@ function es_init(gdir,gstage) {
     paint(gdir,gstage);
   };
   es.onerror = function() {
+    console.log('es error');
     // es_init();
   };
 }
