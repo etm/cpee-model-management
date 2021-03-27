@@ -23,6 +23,7 @@ require 'riddl/client'
 require 'riddl/protocols/utils'
 require 'fileutils'
 require 'pathname'
+require 'shellwords'
 
 module CPEE
   module ModelManagement
@@ -36,39 +37,39 @@ module CPEE
       p2 = Pathname.new(File.dirname(new))
       old = File.basename(old)
       new = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
-      `git mv     "#{old}"                      "#{new}"              2>/dev/null`
-      `git rm -rf "#{old + '.active'}"                                2>/dev/null`
-      `git rm -rf "#{old + '.active-uuid'}"                           2>/dev/null`
-      `git mv     "#{old + '.author'}"          "#{new + '.author'}"  2>/dev/null`
-      `git mv     "#{old + '.creator'}"         "#{new + '.creator'}" 2>/dev/null`
-      `git mv     "#{old + '.stage'}"           "#{new + '.stage'}"   2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old}"                      "#{new}"              2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{old + '.active'}"                                2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{old + '.active-uuid'}"                           2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old + '.author'}"          "#{new + '.author'}"  2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old + '.creator'}"         "#{new + '.creator'}" 2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old + '.stage'}"           "#{new + '.stage'}"   2>/dev/null`
       Dir.chdir(cdir)
     end
     def self::git_rm(models,new)
       cdir = Dir.pwd
       Dir.chdir(File.join(models,File.dirname(new)))
       new = File.basename(new)
-      `git rm -rf "#{new}" 2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}" 2>/dev/null`
        FileUtils.rm_rf(new)
-      `git rm -rf "#{new}.active"      2>/dev/null`
-      `git rm -rf "#{new}.active-uuid" 2>/dev/null`
-      `git rm -rf "#{new}.author"      2>/dev/null`
-      `git rm -rf "#{new}.creator"     2>/dev/null`
-      `git rm -rf "#{new}.stage"       2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active"      2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active-uuid" 2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.author"      2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.creator"     2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.stage"       2>/dev/null`
       Dir.chdir(cdir)
     end
     def self::git_shift(models,new)
       cdir = Dir.pwd
       Dir.chdir(File.join(models,File.dirname(new)))
       new = File.basename(new)
-      `git rm -rf "#{new}.active"      2>/dev/null`
-      `git rm -rf "#{new}.active-uuid" 2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active"      2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active-uuid" 2>/dev/null`
       Dir.chdir(cdir)
     end
     def self::git_commit(models,new,author)
-      Process.fork do
-        exec 'ruby', File.join(__dir__,'commit.rb'), File.realpath(models), new, author
-      end
+      rp = File.realpath(models)
+      crb = File.join(__dir__,'commit.rb')
+      system 'ruby ' + crb + ' ' + [rp, new, author].shelljoin + ' &'
     end
     def self::fs_mv(models,old,new)
       fname = File.join(models,old)
