@@ -187,14 +187,15 @@ module CPEE
         where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
         views = @a[1]
         models = @a[2]
-        stage = @p[0]&.value || 'draft'
-        stage = views[stage] if views && views[stage]
+        stage = [@p[0]&.value] || ['draft']
+        stage << views[stage[0]] if views && views[stage[0]]
+
 
         names = Dir.glob(File.join(models,where,'*.dir')).map do |f|
           { :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,where,'*.xml')).map do |f|
           fstage = File.read(f + '.stage').strip rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if fstage == stage
+          { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -204,14 +205,14 @@ module CPEE
       def response
         views = @a[0]
         models = @a[1]
-        stage = @p[0]&.value || 'draft'
-        stage = views[stage] if views && views[stage]
+        stage = [@p[0]&.value] || ['draft']
+        stage << views[stage[0]] if views && views[stage[0]]
 
         names = Dir.glob(File.join(models,'*.dir/*.xml')).map do |f|
           { :type => :file, :name => File.join(File.basename(File.dirname(f)),File.basename(f)), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,'*.xml')).map do |f|
           fstage = File.read(f + '.stage').strip rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if fstage == stage
+          { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
