@@ -66,6 +66,19 @@ elsif command == 'convert'
         name = File.basename(f,'.xml')
         creator = author = design_dir = design_stage = nil
 
+        if doc.find('/x:testset/x:attributes').length == 0
+          n = doc.root.add('x:attributes')
+        end
+
+        if doc.find('/x:testset/x:attributes/x:theme').length == 0
+          n = doc.find('/x:testset/x:attributes').first
+          n.add('x:theme','extended')
+        end
+        if doc.find('/x:testset/x:attributes/x:info').length == 0
+          n = doc.find('/x:testset/x:attributes').first
+          n.add('x:info',name)
+        end
+
         if (dt = doc.find('/x:testset/x:attributes/x:creator')).length > 0
           dt.each do |e|
             creator = e.text
@@ -102,12 +115,14 @@ elsif command == 'convert'
         end
         File.write(f + '.stage',design_stage)
 
+        dd = ENV['PWD'] || Dir.pwd
+        ma = dd.scan(/\/([^\/]+\.dir)/)
+        design_dir = ma.join('/')
         if (dt = doc.find('/x:testset/x:attributes/x:design_dir')).length > 0
           dt.each do |e|
-            design_dir = e.text
+            e.text = design_dir
           end
         else
-          design_dir = Dir.pwd.sub(/^.*?models\/?/,'')
           doc.find('/x:testset/x:attributes').each do |e|
             e.add('x:design_dir',design_dir)
           end
