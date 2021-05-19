@@ -35,36 +35,39 @@ module CPEE
       Dir.chdir(File.join(models,File.dirname(old)))
       p1 = Pathname.new(File.dirname(old))
       p2 = Pathname.new(File.dirname(new))
-      old = File.basename(old)
-      new = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old}"                      "#{new}"              2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{old + '.active'}"                                2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{old + '.active-uuid'}"                           2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old + '.author'}"          "#{new + '.author'}"  2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old + '.creator'}"         "#{new + '.creator'}" 2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{old + '.stage'}"           "#{new + '.stage'}"   2>/dev/null`
+      told = File.basename(old)
+      tnew = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told}"                      "#{tnew}"              2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active'}"                                2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active-uuid'}"                           2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.author'}"          "#{tnew + '.author'}"  2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.creator'}"         "#{tnew + '.creator'}" 2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.stage'}"           "#{tnew + '.stage'}"   2>/dev/null`
       Dir.chdir(cdir)
+      CPEE::ModelManagement::fs_mv(models,old,new) # fallback
     end
     def self::git_rm(models,new)
       cdir = Dir.pwd
       Dir.chdir(File.join(models,File.dirname(new)))
-      new = File.basename(new)
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}" 2>/dev/null`
-       FileUtils.rm_rf(new)
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active"      2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active-uuid" 2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.author"      2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.creator"     2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.stage"       2>/dev/null`
+      tnew = File.basename(new)
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}" 2>/dev/null`
+       FileUtils.rm_rf(tnew)
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.active"      2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.active-uuid" 2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.author"      2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.creator"     2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.stage"       2>/dev/null`
       Dir.chdir(cdir)
+      CPEE::ModelManagement::fs_rm(models,new) # fallback
     end
     def self::git_shift(models,new)
       cdir = Dir.pwd
       Dir.chdir(File.join(models,File.dirname(new)))
-      new = File.basename(new)
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active"      2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{new}.active-uuid" 2>/dev/null`
+      nnew = File.basename(new)
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{nnew}.active"      2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{nnew}.active-uuid" 2>/dev/null`
       Dir.chdir(cdir)
+      CPEE::ModelManagement::fs_shift(models,new) # fallback
     end
     def self::git_commit(models,new,author)
       rp = File.realpath(models)
@@ -74,7 +77,7 @@ module CPEE
     def self::fs_mv(models,old,new)
       fname = File.join(models,old)
       fnname = File.join(models,new)
-      FileUtils.mv(fname,fnname)
+      FileUtils.mv(fname,fnname) rescue nil
       File.delete(fname + '.active',fnname + '.active') rescue nil
       File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
       FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
@@ -104,7 +107,6 @@ module CPEE
       fname = File.join(models,new)
       File.delete(fname + '.active') rescue nil
       File.delete(fname + '.active-uuid') rescue nil
-      Dir.chdir(cdir)
     end
 
     def self::git_dir(models,file)
