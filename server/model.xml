@@ -1,6 +1,6 @@
 <testset xmlns="http://cpee.org/ns/properties/2.0">
   <dataelements/>
-  <handlerwrapper>DefaultHandlerWrapper</handlerwrapper>
+  <executionhandler>ruby</executionhandler>
   <endpoints>
     <machine>machine</machine>
     <sensor>sensor</sensor>
