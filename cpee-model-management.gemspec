@@ -1,13 +1,13 @@
 Gem::Specification.new do |s|
   s.name             = "cpee-model-management"
-  s.version          = "1.0.11"
+  s.version          = "1.0.12"
   s.platform         = Gem::Platform::RUBY
   s.license          = "LGPL-3.0"
   s.summary          = "(Lifecycle) manage your process models in a directory or git repo."
 
   s.description      = "see http://cpee.org"
 
-  s.files            = Dir['{server/*,tools/**/*,lib/**/*}'] + %w(LICENSE Rakefile cpee-model-management.gemspec README.md AUTHORS)
+  s.files            = Dir['{server/*,tools/**/*,lib/**/*,ui/**/*}'] + %w(LICENSE Rakefile cpee-model-management.gemspec README.md AUTHORS)
   s.require_path     = 'lib'
   s.extra_rdoc_files = ['README.md']
   s.bindir           = 'tools'
