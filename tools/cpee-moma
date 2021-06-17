@@ -6,6 +6,7 @@ require 'fileutils'
 require 'xml/smart'
 require 'zip'
 require 'typhoeus'
+require 'securerandom'
 
 def wrap(s, width=78, indent=18)
 	lines = []
@@ -94,6 +95,10 @@ elsif command == 'convert'
           n = doc.root.add('x:attributes')
         end
 
+        if doc.find('/x:testset/x:attributes/x:model_uuid').length == 0
+          n = doc.find('/x:testset/x:attributes').first
+          n.add('x:model_uuid',SecureRandom.uuid)
+        end
         if doc.find('/x:testset/x:attributes/x:theme').length == 0
           n = doc.find('/x:testset/x:attributes').first
           n.add('x:theme','extended')

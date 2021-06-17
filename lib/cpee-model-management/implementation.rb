@@ -24,6 +24,7 @@ require 'riddl/protocols/utils'
 require 'fileutils'
 require 'pathname'
 require 'shellwords'
+require 'securerandom'
 
 module CPEE
   module ModelManagement
@@ -388,6 +389,9 @@ module CPEE
           end
           doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
             ele.text = where
+          end
+          doc.find('/p:testset/p:attributes/p:model_uuid').each do |ele|
+            ele.text = SecureRandom.uuid
           end
           if stage
             doc.find('/p:testset/p:attributes/p:design_stage').each do |ele|
