@@ -48,3 +48,5 @@ ui-behind {
 [is="x-ui-"] table.ui-table tbody tr:hover td[data-class=ops] {
   background-color: #99cee6b0;
 }
+
+[is="x-ui-"] ui-rest > ui-content > ui-area { padding: 1em; }
