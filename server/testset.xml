@@ -18,6 +18,10 @@
     <creator>Juergen Mangler</creator>
     <author>Juergen Mangler</author>
     <modeltype>CPEE</modeltype>
+    <resource_restriction>none</resource_restriction>
+    <resource_id></resource_id>
+    <model_uuid></model_uuid>
+    <model_version></model_version>
     <theme>extended</theme>
     <design_dir></design_dir>
     <design_stage>draft</design_stage>
