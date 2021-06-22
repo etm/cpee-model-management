@@ -26,6 +26,10 @@ ui-behind {
   color: #d0d0d0;
 }
 
+ui-behind span {
+  cursor: pointer;
+}
+
 [is="x-ui-"] table.ui-table {
   border-collapse: collapse;
 }
