@@ -85,7 +85,6 @@ function paint(gdir,gstage) {
           $('[data-class=force] a',clone).attr('href','server/' + gdir + data['name'] + '/open-new?stage=' + gstage);
           $('[data-class=raw] a',clone).attr('href','server/' + gdir + data['name']);
         }
-        $('[data-class=creator]',clone).text(data['creator']);
         $('[data-class=author]',clone).text(data['author']);
         $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
         $('#models tbody').append(clone);
