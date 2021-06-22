@@ -6,6 +6,7 @@ require 'fileutils'
 require 'xml/smart'
 require 'zip'
 require 'typhoeus'
+require 'json'
 require 'securerandom'
 
 def wrap(s, width=78, indent=18)
@@ -85,7 +86,7 @@ if command == 'cpui'
     js_libs(p1)
 elsif command == 'convert'
   Dir['*.xml'].each do |f|
-    XML::Smart.modify(f) do |doc|
+    XML::Smart.open(f) do |doc|
       doc.register_namespace 'x', 'http://cpee.org/ns/properties/2.0'
       if doc.root.qname.name == 'testset'
         name = File.basename(f,'.xml')
@@ -161,8 +162,8 @@ elsif command == 'convert'
         end
 
 
-        attrs = doc.find('/p:testset/p:attributes/*').map do |e|
-          [e.qname.name,e.value]
+        attrs = doc.find('/x:testset/x:attributes/*').map do |e|
+          [e.qname.name,e.text]
         end.to_h
         File.write(f + '.attrs',JSON::pretty_generate(attrs))
 
@@ -171,6 +172,15 @@ elsif command == 'convert'
         File.unlink(f + '.stage') rescue nil
       end
     end
+  end
+  Dir['*.dir'].each do |f|
+    attrs = JSON::load File.open(f + '.attrs') rescue {}
+    attrs['creator'] = File.read(f + '.creator') if File.exists?(f + '.creator')
+    attrs['author'] = File.read(f + '.author') if File.exists?(f + '.author')
+    File.write(f + '.attrs',JSON::pretty_generate(attrs))
+
+    File.unlink(f + '.creator') rescue nil
+    File.unlink(f + '.author') rescue nil
   end
 elsif command == 'new'
   if !File.exists?(p1)

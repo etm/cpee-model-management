@@ -316,7 +316,7 @@ module CPEE
         dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
-        attrs = JSON::load File.open(f + '.attrs')
+        attrs = JSON::load File.open(fname + '.attrs')
         attrs['author'] = author
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
@@ -345,7 +345,7 @@ module CPEE
         Dir.mkdir(fname)
         FileUtils.touch(File.join(fname,'.gitignore'))
 
-        attrs = JSON::load File.open(f + '.attrs')
+        attrs = JSON::load File.open(fname + '.attrs')
         attrs['creator'] = creator
         attrs['author'] = creator
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
@@ -372,7 +372,7 @@ module CPEE
         source = @p[1] ? File.join(models,where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
         fname = File.join(models,where,name + '.xml')
 
-        attrs = JSON::load File.open(f + '.attrs')
+        attrs = JSON::load File.open(fname + '.attrs')
         stage = attrs['design_stage'] if stage.nil? && attrs['design_stage']
         stage = views[stage] if views && views[stage]
 
