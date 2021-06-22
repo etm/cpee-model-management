@@ -191,7 +191,7 @@ module CPEE
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,where,'*.xml')).map do |f|
           attrs = JSON::load File.open(f + '.attrs')
           fstage = attrs['design_stage'] rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
+          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['resource_restriction'], :guarded_what => attrs['resource_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -210,7 +210,7 @@ module CPEE
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,'*.xml')).map do |f|
           attrs = JSON::load File.open(f + '.attrs')
           fstage = attrs['design_stage'] rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
+          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['resource_restriction'], :guarded_what => attrs['resource_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -249,7 +249,7 @@ module CPEE
             ele.text = themes[nstage] || 'model'
           end
           attrs = doc.find('/p:testset/p:attributes/*').map do |e|
-            [e.qname.name,e.value]
+            [e.qname.name,e.text]
           end.to_h
         end
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
@@ -289,7 +289,7 @@ module CPEE
             ele.text = author
           end
           attrs = doc.find('/p:testset/p:attributes/*').map do |e|
-            [e.qname.name,e.value]
+            [e.qname.name,e.text]
           end.to_h
         end
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
@@ -409,7 +409,7 @@ module CPEE
             end
           end
           attrs = doc.find('/p:testset/p:attributes/*').map do |e|
-            [e.qname.name,e.value]
+            [e.qname.name,e.text]
           end.to_h
         end
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
@@ -514,7 +514,7 @@ module CPEE
               ele.text = to
             end
             attrs = doc.find('/p:testset/p:attributes/*').map do |e|
-              [e.qname.name,e.value]
+              [e.qname.name,e.text]
             end.to_h
           end
           File.write(fname + '.attrs',JSON::pretty_generate(attrs))
@@ -537,6 +537,7 @@ module CPEE
 
         if File.exists?(fname)
           author = dn['GN'] + ' ' + dn['SN']
+          attrs = {}
           XML::Smart.string(cont) do |doc|
             doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
             doc.find('/p:testset/p:attributes/p:author').each do |ele|
@@ -550,7 +551,7 @@ module CPEE
               end
             end
             attrs = doc.find('/p:testset/p:attributes/*').map do |e|
-              [e.qname.name,e.value]
+              [e.qname.name,e.text]
             end.to_h
             File.write(fname,doc.to_s)
           end
