@@ -94,6 +94,10 @@ function paint(gdir,gstage) {
   });
 }
 
+function change_it(gdir,gstage) {
+  window.location.href = window.location.pathname + '?stage=' + gstage + '&dir=' + gdir;
+}
+
 $(document).ready(function() {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
@@ -103,9 +107,39 @@ $(document).ready(function() {
 
   es_init(gdir,gstage);
 
+  var shifts = []
+  $.ajax({
+    type: "GET",
+    url: "server/",
+    data: { stages: 'stages' },
+    success: (r) => {
+      shifts = shifts.concat(r);
+      shifts = shifts.filter(item => item !== gstage);
+    }
+  });
+
   $('input[name=stage]').val(gstage);
   $('input[name=dir]').val(gdir);
-  $('ui-behind').text(gstage);
+  $('ui-behind span').text(gstage);
+  $('ui-behind span').click((e) => {
+    if (shifts.length > 0) {
+      var menu = {};
+      menu['Change to'] = [];
+      shifts.forEach(ele => {
+        menu['Change to'].push(
+          {
+            'label': ele,
+            'function_call': change_it,
+            'text_icon': '➔',
+            'type': undefined,
+            'class': 'capitalized',
+            'params': [gdir,ele]
+          }
+        );
+      });
+      new CustomMenu(e).contextmenu(menu);
+    }
+  });
 
   var dragged;
   $('#models').on('drag','td[data-class=model]',false);
@@ -117,7 +151,6 @@ $(document).ready(function() {
     e.preventDefault();
     e.stopPropagation();
     if (dragged) {
-      console.log(dragged);
       var todir = $(e.currentTarget).parents('tr').find('td[data-class=name]').text();
       todir = todir.replace(/\./g,'');
       if (todir != '') {
@@ -125,16 +158,6 @@ $(document).ready(function() {
       }
       move_it(dragged,todir);
       dragged = undefined;
-    }
-  });
-  var shifts = []
-  $.ajax({
-    type: "GET",
-    url: "server/",
-    data: { stages: 'stages' },
-    success: (r) => {
-      shifts = shifts.concat(r);
-      shifts = shifts.filter(item => item !== gstage);
     }
   });
   $('#models').on('click','td[data-class=ops]',(e) => {
@@ -181,7 +204,6 @@ $(document).ready(function() {
         );
       });
     }
-    console.log(shifts);
     new CustomMenu(e).contextmenu(menu);
   });
 

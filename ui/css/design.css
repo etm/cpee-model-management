@@ -22,6 +22,8 @@ form input {
 
 ui-behind {
   text-transform: capitalize;
+  font-weight: bold;
+  color: #d0d0d0;
 }
 
 [is="x-ui-"] table.ui-table {
@@ -50,3 +52,7 @@ ui-behind {
 }
 
 [is="x-ui-"] ui-rest > ui-content > ui-area { padding: 1em; }
+
+tr.contextmenuitem .capitalized {
+  text-transform: capitalize;
+}
