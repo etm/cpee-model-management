@@ -71,10 +71,21 @@
         <ui-area data-belongs-to-tab="models">
           <p>Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@acdp.at">helpdesk@acdp.at</a> if you are lost. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</p>
           <table id="models" class='ui-table'>
+            <thead>
+              <th></th>
+              <th>Name</th>
+              <th><abbr title='force new instance'>F</abbr></th>
+              <th><abbr title='link to model source'>M</abbr></th>
+              <th>Changed By</th>
+              <th><abbr title='Guarded'>G</abbr></th>
+              <th>Changed At</th>
+              <th><abbr title='Operations'>Op</abbr></th>
+            </thead>
             <template id="up">
               <tr>
                 <td data-class='folder' class="noselect">📁</td>
                 <td data-class='name' data-full-name=''><a href=''></a></td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -89,6 +100,7 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
                 <td data-class='date'></td>
                 <td data-class='ops' class="noselect"><span>…</span></td>
               </tr>
@@ -100,6 +112,7 @@
                 <td data-class='force'>[<a target='_blank' href='' title='force new instance'>F</a>]</td>
                 <td data-class='raw'>[<a target='_blank' href='' title='link to model source'>M</a>]</td>
                 <td data-class='author'></td>
+                <td data-class='guarded'></td>
                 <td data-class='date'></td>
                 <td data-class='ops' class="noselect"><span>…</span></td>
               </tr>

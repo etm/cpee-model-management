@@ -41,9 +41,7 @@ module CPEE
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told}"                      "#{tnew}"              2>/dev/null`
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active'}"                                2>/dev/null`
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active-uuid'}"                           2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.author'}"          "#{tnew + '.author'}"  2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.creator'}"         "#{tnew + '.creator'}" 2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.stage'}"           "#{tnew + '.stage'}"   2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.attrs'}"          "#{tnew + '.author'}"  2>/dev/null`
       Dir.chdir(cdir)
       CPEE::ModelManagement::fs_mv(models,old,new) # fallback
     end
@@ -55,9 +53,7 @@ module CPEE
        FileUtils.rm_rf(tnew)
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.active"      2>/dev/null`
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.active-uuid" 2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.author"      2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.creator"     2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.stage"       2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.attrs"      2>/dev/null`
       Dir.chdir(cdir)
       CPEE::ModelManagement::fs_rm(models,new) # fallback
     end
@@ -81,9 +77,7 @@ module CPEE
       FileUtils.mv(fname,fnname) rescue nil
       File.delete(fname + '.active',fnname + '.active') rescue nil
       File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
-      FileUtils.mv(fname + '.author',fnname + '.author') rescue nil
-      FileUtils.mv(fname + '.creator',fnname + '.creator') rescue nil
-      FileUtils.mv(fname + '.stage',fnname + '.stage') rescue nil
+      FileUtils.mv(fname + '.attrs',fnname + '.attrs') rescue nil
     end
     def self::fs_cp(models,old,new)
       fname = File.join(models,old)
@@ -91,18 +85,14 @@ module CPEE
       FileUtils.cp(fname,fnname)
       File.delete(fname + '.active',fnname + '.active') rescue nil
       File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
-      FileUtils.cp(fname + '.author',fnname + '.author') rescue nil
-      FileUtils.cp(fname + '.creator',fnname + '.creator') rescue nil
-      FileUtils.cp(fname + '.stage',fnname + '.stage') rescue nil
+      FileUtils.cp(fname + '.attrs',fnname + '.attrs') rescue nil
     end
     def self::fs_rm(models,new)
       fname = File.join(models,new)
       FileUtils.rm_rf(fname)
       File.delete(fname + '.active') rescue nil
       File.delete(fname + '.active-uuid') rescue nil
-      File.delete(fname + '.author') rescue nil
-      File.delete(fname + '.creator') rescue nil
-      File.delete(fname + '.stage') rescue nil
+      File.delete(fname + '.attrs') rescue nil
     end
     def self::fs_shift(models,new)
       fname = File.join(models,new)
@@ -169,14 +159,16 @@ module CPEE
         if  op == 'delete'
           { :op => op, :type => :dir, :name => File.basename(f) }
         else
-          { :op => op, :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+          attrs = JSON::load File.open(f + '.attrs')
+          { :op => op, :type => :dir, :name => File.basename(f), :creator => attrs['creator'], :date => File.mtime(f).xmlschema }
         end
       else
         if  op == 'delete'
           { :op => op, :type => :file, :name => f.sub(Regexp.compile(File.join(models,'/')),'') }
         else
-          fstage = File.read(f + '.stage').strip rescue 'draft'
-          { :op => op, :type => :file, :name => f.sub(Regexp.compile(File.join(models,'/')),''), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema }
+          attrs = JSON::load File.open(f + '.attrs')
+          fstage = attrs['design_stage'] rescue 'draft'
+          { :op => op, :type => :file, :name => f.sub(Regexp.compile(File.join(models,'/')),''), :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(f).xmlschema }
         end
       end
       what[:source] = s.sub(/models\//,'') unless s.nil?
@@ -193,12 +185,13 @@ module CPEE
         stage = [@p[0]&.value] || ['draft']
         stage << views[stage[0]] if views && views[stage[0]]
 
-
         names = Dir.glob(File.join(models,where,'*.dir')).map do |f|
-          { :type => :dir, :name => File.basename(f), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+          attrs = JSON::load File.open(f + '.attrs')
+          { :type => :dir, :name => File.basename(f), :creator => attrs['creator'], :date => File.mtime(f).xmlschema }
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,where,'*.xml')).map do |f|
-          fstage = File.read(f + '.stage').strip rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
+          attrs = JSON::load File.open(f + '.attrs')
+          fstage = attrs['design_stage'] rescue 'draft'
+          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -212,10 +205,12 @@ module CPEE
         stage << views[stage[0]] if views && views[stage[0]]
 
         names = Dir.glob(File.join(models,'*.dir/*.xml')).map do |f|
-          { :type => :file, :name => File.join(File.basename(File.dirname(f)),File.basename(f)), :creator => File.read(f + '.creator'), :date => File.mtime(f).xmlschema }
+          attrs = JSON::load File.open(f + '.attrs')
+          { :type => :file, :name => File.join(File.basename(File.dirname(f)),File.basename(f)), :creator => attrs['creator'], :date => File.mtime(f).xmlschema }
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,'*.xml')).map do |f|
-          fstage = File.read(f + '.stage').strip rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => File.read(f + '.creator'), :author => File.read(f + '.author'), :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
+          attrs = JSON::load File.open(f + '.attrs')
+          fstage = attrs['design_stage'] rescue 'draft'
+          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -241,6 +236,7 @@ module CPEE
         dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
+        attrs = {}
         XML::Smart::modify(fname) do |doc|
           doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
           doc.find('/p:testset/p:attributes/p:author').each do |ele|
@@ -252,9 +248,11 @@ module CPEE
           doc.find('/p:testset/p:attributes/p:theme').each do |ele|
             ele.text = themes[nstage] || 'model'
           end
+          attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+            [e.qname.name,e.value]
+          end.to_h
         end
-        File.write(fname + '.author',author)
-        File.write(fname + '.stage',nstage)
+        File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op author, 'shift', models, File.join('.', where, name + '.xml'), File.join('.', where, name + '.xml')
         CPEE::ModelManagement::notify conns, 'shift', models, fname, fname
@@ -281,6 +279,7 @@ module CPEE
         dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
+        attrs = {}
         XML::Smart::modify(fname) do |doc|
           doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
           doc.find('/p:testset/p:attributes/p:info').each do |ele|
@@ -289,8 +288,11 @@ module CPEE
           doc.find('/p:testset/p:attributes/p:author').each do |ele|
             ele.text = author
           end
+          attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+            [e.qname.name,e.value]
+          end.to_h
         end
-        File.write(fname + '.author',author)
+        File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op author, 'mv', models, File.join('.', where, nname + '.xml'), File.join('.', where, name + '.xml')
         CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
@@ -313,7 +315,10 @@ module CPEE
 
         dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
-        File.write(fname + '.author',author)
+
+        attrs = JSON::load File.open(f + '.attrs')
+        attrs['author'] = author
+        File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op author, 'mv', models, File.join(nname + '.dir'), File.join(name + '.dir')
         CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
@@ -339,8 +344,11 @@ module CPEE
 
         Dir.mkdir(fname)
         FileUtils.touch(File.join(fname,'.gitignore'))
-        File.write(fname + '.creator',creator)
-        File.write(fname + '.author',creator)
+
+        attrs = JSON::load File.open(f + '.attrs')
+        attrs['creator'] = creator
+        attrs['author'] = creator
+        File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op creator, 'add', models, name + '.dir'
         CPEE::ModelManagement::notify conns, 'create', models, fname
@@ -364,7 +372,8 @@ module CPEE
         source = @p[1] ? File.join(models,where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
         fname = File.join(models,where,name + '.xml')
 
-        stage = File.read(source + '.stage') if stage.nil? && File.exists?(source + '.stage')
+        attrs = JSON::load File.open(f + '.attrs')
+        stage = attrs['design_stage'] if stage.nil? && attrs['design_stage']
         stage = views[stage] if views && views[stage]
 
         counter = 0
@@ -376,6 +385,7 @@ module CPEE
         dn = CPEE::ModelManagement::get_dn @h['DN']
         creator = dn['GN'] + ' ' + dn['SN']
         FileUtils.cp(source,fname)
+        attrs = {}
         XML::Smart::modify(fname) do |doc|
           doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
           doc.find('/p:testset/p:attributes/p:info').each do |ele|
@@ -398,10 +408,11 @@ module CPEE
               ele.text = stage
             end
           end
+          attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+            [e.qname.name,e.value]
+          end.to_h
         end
-        File.write(fname + '.creator',creator)
-        File.write(fname + '.author',creator)
-        File.write(fname + '.stage',stage)
+        File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op creator, 'add', models, File.join('.', where, name + '.xml')
         CPEE::ModelManagement::notify conns, 'create', models, fname
@@ -496,13 +507,17 @@ module CPEE
         dn = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
         if !File.exist?(File.join(models,to,name + '.xml'))
+          attrs = {}
           XML::Smart::modify(fname) do |doc|
             doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
             doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
               ele.text = to
             end
+            attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+              [e.qname.name,e.value]
+            end.to_h
           end
-          File.write(fname + '.author',author)
+          File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
           CPEE::ModelManagement::op author, 'mv', models, File.join('.', to, name + '.xml'), File.join('.', where, name + '.xml')
           CPEE::ModelManagement::notify conns, 'move', models, File.join(models,to,name + '.xml'), fname
@@ -524,18 +539,22 @@ module CPEE
           author = dn['GN'] + ' ' + dn['SN']
           XML::Smart.string(cont) do |doc|
             doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
-            unless File.exists?(File.join(models,where,name + '.xml.creator'))
-              doc.find('/p:testset/p:attributes/p:author').each do |ele|
-                File.write(File.join(models,where,name + '.xml.creator'),ele.text)
-              end
-            end
             doc.find('/p:testset/p:attributes/p:author').each do |ele|
               ele.text = dn['GN'] + ' ' + dn['SN']
             end
+            if doc.find('/p:testset/p:attributes/p:design_stage').empty?
+              doc.find('/p:testset/p:attributes').first.add('p:design_stage','draft')
+            else
+              doc.find('/p:testset/p:attributes/p:design_stage').each do |ele|
+                ele.text = 'draft' if ele.text.strip == ''
+              end
+            end
+            attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+              [e.qname.name,e.value]
+            end.to_h
             File.write(fname,doc.to_s)
-            File.write(fname + '.author',author)
-            File.write(fname + '.stage',doc.find('string(/p:testset/p:attributes/p:design_stage)').sub(/^$/,'draft'))
           end
+          File.write(fname + '.attrs',JSON::pretty_generate(attrs))
           CPEE::ModelManagement::op author, 'add', models, File.join('.', where, name + '.xml')
           CPEE::ModelManagement::notify conns, 'put', models, fname
         else

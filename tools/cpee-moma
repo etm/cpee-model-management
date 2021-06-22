@@ -118,7 +118,6 @@ elsif command == 'convert'
             e.add('x:creator',creator)
           end
         end
-        File.write(f + '.creator',creator)
 
         if (dt = doc.find('/x:testset/x:attributes/x:author')).length > 0
           dt.each do |e|
@@ -130,7 +129,6 @@ elsif command == 'convert'
             e.add('x:author',author)
           end
         end
-        File.write(f + '.author',author)
 
         if (dt = doc.find('/x:testset/x:attributes/x:design_stage')).length > 0
           dt.each do |e|
@@ -142,7 +140,6 @@ elsif command == 'convert'
             e.add('x:design_stage',design_stage)
           end
         end
-        File.write(f + '.stage',design_stage)
 
         dd = ENV['PWD'] || Dir.pwd
         ma = dd.scan(/\/([^\/]+\.dir)/)
@@ -162,6 +159,16 @@ elsif command == 'convert'
             e.text = name
           end
         end
+
+
+        attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+          [e.qname.name,e.value]
+        end.to_h
+        File.write(f + '.attrs',JSON::pretty_generate(attrs))
+
+        File.unlink(f + '.creator') rescue nil
+        File.unlink(f + '.author') rescue nil
+        File.unlink(f + '.stage') rescue nil
       end
     end
   end
