@@ -191,7 +191,7 @@ module CPEE
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,where,'*.xml')).map do |f|
           attrs = JSON::load File.open(f + '.attrs')
           fstage = attrs['design_stage'] rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['resource_restriction'], :guarded_what => attrs['resource_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
+          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['guarded'], :guarded_id => attrs['guarded_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -210,7 +210,7 @@ module CPEE
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,'*.xml')).map do |f|
           attrs = JSON::load File.open(f + '.attrs')
           fstage = attrs['design_stage'] rescue 'draft'
-          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['resource_restriction'], :guarded_what => attrs['resource_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
+          { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['guarded'], :guarded_id => attrs['guarded_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
@@ -372,7 +372,7 @@ module CPEE
         source = @p[1] ? File.join(models,where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
         fname = File.join(models,where,name + '.xml')
 
-        attrs = JSON::load File.open(fname + '.attrs')
+        attrs = JSON::load File.open(fname + '.attrs') rescue {}
         stage = attrs['design_stage'] if stage.nil? && attrs['design_stage']
         stage = views[stage] if views && views[stage]
 

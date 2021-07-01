@@ -25,8 +25,8 @@
     <info>none</info>
     <creator>Juergen Mangler</creator>
     <author>Juergen Mangler</author>
-    <resource_restriction>none</resource_restriction>
-    <resource_id></resource_id>
+    <guarded>none</guarded>
+    <guarded_id></guarded_id>
     <model_uuid></model_uuid>
     <model_version></model_version>
     <modeltype>CPEE</modeltype>
