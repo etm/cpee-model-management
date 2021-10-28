@@ -358,7 +358,7 @@ module CPEE
         Dir.mkdir(fname)
         FileUtils.touch(File.join(fname,'.gitignore'))
 
-        attrs = JSON::load File.open(fname + '.attrs')
+        attrs = {}
         attrs['creator'] = creator
         attrs['author'] = creator
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
