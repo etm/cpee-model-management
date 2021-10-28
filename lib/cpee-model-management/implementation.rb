@@ -38,10 +38,10 @@ module CPEE
       p2 = Pathname.new(File.dirname(new))
       told = File.basename(old)
       tnew = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told}"                      "#{tnew}"              2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active'}"                                2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active-uuid'}"                           2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.attrs'}"          "#{tnew + '.author'}"  2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told}"                      "#{tnew}"            2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active'}"                               2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active-uuid'}"                          2>/dev/null`
+      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.attrs'}"          "#{tnew + '.attrs'}"  2>/dev/null`
       Dir.chdir(cdir)
       CPEE::ModelManagement::fs_mv(models,old,new) # fallback
     end

@@ -88,6 +88,12 @@ function paint(gdir,gstage) {
           $('[data-class=guarded] abbr',clone).attr('title',data['guarded'] || '');
           $('[data-class=guarded] abbr',clone).text((data['guarded'] || '').match(/none/i) ? '' : (data['guarded'] || '').charAt(0).toUpperCase());
           $('[data-class=resource]',clone).text(data['guarded_id'] || '');
+
+          if (data['guarded']) {
+            $('[data-class=guarded] abbr',clone).attr('title',data['guarded']);
+            $('[data-class=guarded] abbr',clone).text(data['guarded'].match(/none/i) ? '' : data['guarded'].charAt(0).toUpperCase());
+            $('[data-class=resource]',clone).text(data['guarded_what']);
+          }
         }
         $('[data-class=author]',clone).text(data['author']);
         $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
