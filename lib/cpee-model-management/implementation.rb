@@ -320,6 +320,19 @@ module CPEE
         attrs['author'] = author
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
+        Dir.glob(File.join(fname + '/*.xml')).each do |f|
+          XML::Smart::modify(f) do |doc|
+            doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
+            doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
+              ele.text = nname + '.dir'
+            end
+            attrs = doc.find('/p:testset/p:attributes/*').map do |e|
+              [e.qname.name,e.text]
+            end.to_h
+          end
+          File.write(f + '.attrs',JSON::pretty_generate(attrs))
+        end
+
         CPEE::ModelManagement::op author, 'mv', models, File.join(nname + '.dir'), File.join(name + '.dir')
         CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
         nil
