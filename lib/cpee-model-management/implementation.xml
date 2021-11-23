@@ -1,4 +1,10 @@
 <description xmlns="http://riddl.org/ns/description/1.0" xmlns:ann="http://riddl.org/ns/annotation/1.0" xmlns:xi="http://www.w3.org/2001/XInclude" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <message name="stats">
+    <parameter name="stats" mimetype="text/xml"/>
+  </message>
+  <message name="tree">
+    <parameter name="tree" mimetype="text/xml"/>
+  </message>
   <message name="item">
     <parameter name="stage" type="string">
       <xi:include href="stages"/>
@@ -93,6 +99,17 @@
       <put in="newstage"/> <!-- shift -->
       <resource relative="open"><get in="stage"/></resource>
       <resource relative="open-new"><get in="stage"/></resource>
+    </resource>
+    <resource relative="dash">
+      <resource relative="stopped">
+        <get out="tree"/>
+      </resource>
+      <resource relative="running">
+        <get out="tree"/>
+      </resource>
+      <resource relative="stats">
+        <get out="stats"/>
+      </resource>
     </resource>
   </resource>
 </description>

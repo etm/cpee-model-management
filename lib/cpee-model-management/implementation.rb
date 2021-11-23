@@ -25,6 +25,7 @@ require 'fileutils'
 require 'pathname'
 require 'shellwords'
 require 'securerandom'
+require 'cpee/redis'
 
 module CPEE
   module ModelManagement
@@ -616,11 +617,45 @@ module CPEE
       end
     end #}}}
 
+    class Events < Riddl::Implementation #{{{
+      def response
+        redis         = @a[0][:redis]
+        topic         = @p[1].value
+        event_name    = @p[2].value
+        notification  = JSON.parse(@p[3].value.read)
+
+        unless instance = notification['instance-uuid']
+          @status = 400
+          return nil
+        end
+
+        instancenr = notification['instance']
+        content = notification['content']
+
+        p content
+      end
+    end #}}}
+
     def self::implementation(opts)
       opts[:connections] = []
 
+      ### set redis_cmd to nil if you want to do global
+      ### at least redis_path or redis_url and redis_db have to be set if you do global
+      opts[:redis_path]                 ||= 'redis.sock' # use e.g. /tmp/redis.sock for global stuff. Look it up in your redis config
+      opts[:redis_db]                   ||= 0
+      ### optional redis stuff
+      opts[:redis_url]                  ||= nil
+      opts[:redis_cmd]                  ||= 'redis-server --port 0 --unixsocket #redis_path# --unixsocketperm 600 --pidfile #redis_pid# --dir #redis_db_dir# --dbfilename #redis_db_name# --databases 1 --save 900 1 --save 300 10 --save 60 10000 --rdbcompression yes --daemonize yes'
+      opts[:redis_pid]                  ||= 'redis.pid' # use e.g. /var/run/redis.pid if you do global. Look it up in your redis config
+      opts[:redis_db_name]              ||= 'redis.rdb' # use e.g. /var/lib/redis.rdb for global stuff. Look it up in your redis config
+
+      CPEE::redis_connect opts, 'Server Main'
+
       Proc.new do
-        on resource do
+        interface 'events' do
+          run Events, opts[:redis] if post 'event'
+        end
+        interface 'implementation' do
           run GetList, :main, opts[:views], opts[:models] if get 'stage'
           run GetListFull, opts[:views], opts[:models] if get 'full'
           run GetStages, opts[:themes] if get 'stages'
