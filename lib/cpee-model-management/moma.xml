@@ -1,0 +1,21 @@
+<declaration xmlns="http://riddl.org/ns/declaration/1.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <interface name="implementation">
+    <xi:include href="implementation.xml"/>
+  </interface>
+  <interface name="events">
+    <xi:include href="http://www.riddl.org/ns/common-patterns/notifications-consumer/2.0/consumer.xml"/>
+  </interface>
+
+  <facade>
+    <tile>
+      <layer name="implementation">
+        <apply-to>/</apply-to>
+      </layer>
+    </tile>
+    <tile>
+      <layer name="events">
+        <apply-to>/dash/events</apply-to>
+      </layer>
+    </tile>
+  </facade>
+</declaration>
