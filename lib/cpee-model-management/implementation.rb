@@ -632,7 +632,13 @@ module CPEE
         instancenr = notification['instance']
         content = notification['content']
 
-        p content
+        p notification['instance-url']
+        p notification['instance-uuid']
+        if topic == 'state'  && event_name == 'change'
+          p content['state']
+        elsif topic == 'task'  && event_name == 'instantiation'
+          p content['received']
+        end
       end
     end #}}}
 
@@ -653,7 +659,7 @@ module CPEE
 
       Proc.new do
         interface 'events' do
-          run Events, opts[:redis] if post 'event'
+          run Events, opts if post 'event'
         end
         interface 'implementation' do
           run GetList, :main, opts[:views], opts[:models] if get 'stage'
