@@ -57,15 +57,15 @@
   <body is="x-ui-">
     <ui-rest id="main">
       <ui-tabbar>
-        <ui-before                                  ></ui-before>
-        <ui-tab class=""         data-tab="models"  >Models</ui-tab>
-        <ui-tab class="inactive" data-tab="newmodel">New Model</ui-tab>
-        <ui-tab class="inactive" data-tab="newdir"  >New Dir</ui-tab>
-        <ui-space                                   ></ui-space>
-        <ui-tab class="inactive" data-tab="running" >Running</ui-tab>
-        <ui-tab class="inactive" data-tab="stopped" >Stopped</ui-tab>
-        <ui-behind                                  ><span></span></ui-behind>
-        <ui-last                                    ><a class="logo" href=".."></a></ui-last>
+        <ui-before                                   ></ui-before>
+        <ui-tab class=""         data-tab="models"   >Models</ui-tab>
+        <ui-tab class="inactive" data-tab="newmodel" >New Model</ui-tab>
+        <ui-tab class="inactive" data-tab="newdir"   >New Dir</ui-tab>
+        <ui-space                                    ></ui-space>
+        <ui-tab class="inactive" data-tab="instances">Instances</ui-tab>
+        <ui-tab class="inactive" data-tab="stats"    >Stats</ui-tab>
+        <ui-behind                                   ><span></span></ui-behind>
+        <ui-last                                     ><a class="logo" href=".."></a></ui-last>
       </ui-tabbar>
       <ui-content class="noselect">
         <ui-area data-belongs-to-tab="models">
@@ -160,7 +160,17 @@
             <p>
               <button>New Directory</button>
             </p>
-          </id>
+          </form>
+        </ui-area>
+        <ui-area data-belongs-to-tab="instances" class="inactive">
+          <p>
+            Show running and stopped instances.
+          </p>
+        </ui-area>
+        <ui-area data-belongs-to-tab="stats" class="inactive">
+          <p>
+            Show statistics about instances per server, and metrics about the health of the environment.
+          </p>
         </ui-area>
       </ui-content>
     </ui-rest>

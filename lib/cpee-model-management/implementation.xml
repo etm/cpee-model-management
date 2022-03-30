@@ -101,14 +101,13 @@
       <resource relative="open-new"><get in="stage"/></resource>
     </resource>
     <resource relative="dash">
-      <resource relative="stopped">
+      <resource relative="instances">
         <get out="tree"/>
-      </resource>
-      <resource relative="running">
-        <get out="tree"/>
+        <sse/>
       </resource>
       <resource relative="stats">
         <get out="stats"/>
+        <sse/>
       </resource>
     </resource>
   </resource>

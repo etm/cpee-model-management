@@ -631,13 +631,62 @@ module CPEE
 
         instancenr = notification['instance']
         content = notification['content']
+        attr = content['attributes']
 
-        p notification['instance-url']
-        p notification['instance-uuid']
         if topic == 'state'  && event_name == 'change'
-          p content['state']
+          if %w{abandoned finished}.include?(content['state'])
+            if child = redis.get('instance:' + notification['instance-uuid'] + '/child')
+              parent = redis.get('instance:' + notification['instance-uuid'] + '/parent')
+            end
+            redis.multi do |multi|
+              multi.lrem('instances',0,notification['instance-uuid'])
+              multi.del('instance:' + notification['instance-uuid'] + '/author')
+              multi.del('instance:' + notification['instance-uuid'] + '/path')
+              multi.del('instance:' + notification['instance-uuid'] + '/name')
+              multi.del('instance:' + notification['instance-uuid'] + '/state')
+              multi.del('instance:' + notification['instance-uuid'] + '/cpu')
+              multi.del('instance:' + notification['instance-uuid'] + '/mem')
+              if child
+                if parent
+                  multi.set('instance:' + child + '/parent',parent)
+                else
+                  multi.del('instance:' + child + '/parent')
+                end
+              end
+              multi.del('instance:' + notification['instance-uuid'] + '/child')
+              multi.del('instance:' + notification['instance-uuid'] + '/parent')
+            end
+          elsif %w{ready}.include?(content['state'])
+            exi = true if redis.lrange('instances',0,-1).include?(notification['instance-uuid'])
+            redis.multi do |multi|
+              multi.rpush('instances',notification['instance-uuid']) unless exi
+              multi.set('instance:' + notification['instance-uuid'] + '/author',attr['author'])
+              multi.set('instance:' + notification['instance-uuid'] + '/path',File.join(attr['design_dir'],attr['info']+'.xml')) unless attr['design_dir'].nil? || attr['info'].nil?
+              multi.set('instance:' + notification['instance-uuid'] + '/name',attr['info'])
+              multi.set('instance:' + notification['instance-uuid'] + '/cpu',0)
+              multi.set('instance:' + notification['instance-uuid'] + '/mem',0)
+            end
+          elsif %w{stopped}.include?(content['state'])
+            redis.multi do |multi|
+              multi.set('instance:' + notification['instance-uuid'] + '/state',content['state'])
+              multi.set('instance:' + notification['instance-uuid'] + '/cpu',0)
+              multi.set('instance:' + notification['instance-uuid'] + '/mem',0)
+            end
+          else
+            redis.multi do |multi|
+              multi.set('instance:' + notification['instance-uuid'] + '/state',content['state'])
+            end
+          end
         elsif topic == 'task'  && event_name == 'instantiation'
-          p content['received']
+          redis.multi do |multi|
+            multi.set('instance:' + notification['instance-uuid'] + '/child',content['received']['CPEE-INSTANCE-UUID'])
+            multi.set('instance:' + content['received']['CPEE-INSTANCE-UUID'] + '/parent',notification['instance-uuid'])
+          end
+        elsif topic == 'node'  && event_name == 'resource_utilization'
+          redis.multi do |multi|
+            multi.set('instance:' + notification['instance-uuid'] + '/cpu',content['utime'] + content['stime'])
+            multi.set('instance:' + notification['instance-uuid'] + '/mem',content['mib'])
+          end
         end
       end
     end #}}}
