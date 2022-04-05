@@ -5,6 +5,9 @@
   <message name="tree">
     <parameter name="tree" mimetype="text/xml"/>
   </message>
+  <message name="instance">
+    <parameter name="tree" mimetype="text/xml"/>
+  </message>
   <message name="item">
     <parameter name="stage" type="string">
       <xi:include href="stages"/>
@@ -101,13 +104,17 @@
       <resource relative="open-new"><get in="stage"/></resource>
     </resource>
     <resource relative="dash">
+      <resource relative="events">
+        <sse/>
+      </resource>
       <resource relative="instances">
         <get out="tree"/>
-        <sse/>
+        <resource>
+          <get out="instance"/>
+        </resource>
       </resource>
       <resource relative="stats">
         <get out="stats"/>
-        <sse/>
       </resource>
     </resource>
   </resource>

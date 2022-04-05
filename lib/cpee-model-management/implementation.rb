@@ -607,7 +607,7 @@ module CPEE
       end
     end #}}}
 
-    class Active < Riddl::SSEImplementation #{{{
+    class ManagementSend < Riddl::SSEImplementation #{{{
       def onopen
         @conns = @a[0]
         @conns << self
@@ -617,82 +617,109 @@ module CPEE
       end
     end #}}}
 
-    class Events < Riddl::Implementation #{{{
+    class StatSend < Riddl::SSEImplementation #{{{
+      def onopen
+        @conns = @a[0]
+        @conns << self
+      end
+      def onclose
+        @conns.delete(self)
+      end
+    end #}}}
+
+    class StatReceive < Riddl::Implementation #{{{
       def response
-        redis         = @a[0][:redis]
+        redis         = @a[0]
+        receivers     = @a[1]
         topic         = @p[1].value
         event_name    = @p[2].value
         notification  = JSON.parse(@p[3].value.read)
 
-        unless instance = notification['instance-uuid']
-          @status = 400
-          return nil
-        end
-
         instancenr = notification['instance']
         content = notification['content']
         attr = content['attributes']
+        engine = notification['cpee']
+
+        prefix = File.join(engine,notification['instance-uuid'].to_s)
 
         if topic == 'state'  && event_name == 'change'
+          send[:state] = content['state']
           if %w{abandoned finished}.include?(content['state'])
-            if child = redis.get('instance:' + notification['instance-uuid'] + '/child')
-              parent = redis.get('instance:' + notification['instance-uuid'] + '/parent')
+            if child = redis.get(File.join(prefix,'child'))
+              parent = redis.get(File.join(prefix,'parent'))
             end
             redis.multi do |multi|
-              multi.lrem('instances',0,notification['instance-uuid'])
-              multi.del('instance:' + notification['instance-uuid'] + '/author')
-              multi.del('instance:' + notification['instance-uuid'] + '/path')
-              multi.del('instance:' + notification['instance-uuid'] + '/name')
-              multi.del('instance:' + notification['instance-uuid'] + '/state')
-              multi.del('instance:' + notification['instance-uuid'] + '/cpu')
-              multi.del('instance:' + notification['instance-uuid'] + '/mem')
+              multi.lrem(File.join(engine,'instances'),0,notification['instance-uuid'])
+              multi.del(File.join(prefix,'author'))
+              multi.del(File.join(prefix,'path'))
+              multi.del(File.join(prefix,'name'))
+              multi.del(File.join(prefix,'state'))
+              multi.del(File.join(prefix,'cpu'))
+              multi.del(File.join(prefix,'mem'))
               if child
                 if parent
-                  multi.set('instance:' + child + '/parent',parent)
+                  multi.set(File.join(prefix,child,'parent'),parent)
                 else
-                  multi.del('instance:' + child + '/parent')
+                  multi.del(File.join(prefix,child,'parent'))
                 end
               end
-              multi.del('instance:' + notification['instance-uuid'] + '/child')
-              multi.del('instance:' + notification['instance-uuid'] + '/parent')
+              multi.del(File.join(prefix,'child'))
+              multi.del(File.join(prefix,'parent'))
             end
           elsif %w{ready}.include?(content['state'])
-            exi = true if redis.lrange('instances',0,-1).include?(notification['instance-uuid'])
+            exi = true if redis.lrange(File.join(engine,'instances'),0,-1).include?(notification['instance-uuid'])
             redis.multi do |multi|
-              multi.rpush('instances',notification['instance-uuid']) unless exi
-              multi.set('instance:' + notification['instance-uuid'] + '/author',attr['author'])
-              multi.set('instance:' + notification['instance-uuid'] + '/path',File.join(attr['design_dir'],attr['info']+'.xml')) unless attr['design_dir'].nil? || attr['info'].nil?
-              multi.set('instance:' + notification['instance-uuid'] + '/name',attr['info'])
-              multi.set('instance:' + notification['instance-uuid'] + '/cpu',0)
-              multi.set('instance:' + notification['instance-uuid'] + '/mem',0)
+              multi.rpush(File.join(engine,'instances'),notification['instance-uuid']) unless exi
+              multi.set(File.join(prefix,'author'),attr['author'])
+              multi.set(File.join(prefix,'path'),File.join(attr['design_dir'],attr['info']+'.xml')) unless attr['design_dir'].nil? || attr['info'].nil?
+              multi.set(File.join(prefix,'name'),attr['info'])
+              multi.set(File.join(prefix,'cpu'),0)
+              multi.set(File.join(prefix,'mem'),0)
             end
           elsif %w{stopped}.include?(content['state'])
             redis.multi do |multi|
-              multi.set('instance:' + notification['instance-uuid'] + '/state',content['state'])
-              multi.set('instance:' + notification['instance-uuid'] + '/cpu',0)
-              multi.set('instance:' + notification['instance-uuid'] + '/mem',0)
+              multi.set(File.join(prefix,'state'),content['state'])
+              multi.set(File.join(prefix,'cpu'),0)
+              multi.set(File.join(prefix,'mem'),0)
             end
           else
             redis.multi do |multi|
-              multi.set('instance:' + notification['instance-uuid'] + '/state',content['state'])
+              multi.set(File.join(prefix,'state'),content['state'])
             end
+          end
+          receivers.each do |conn|
+            conn.send :topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :state => content['state']
           end
         elsif topic == 'task'  && event_name == 'instantiation'
           redis.multi do |multi|
-            multi.set('instance:' + notification['instance-uuid'] + '/child',content['received']['CPEE-INSTANCE-UUID'])
-            multi.set('instance:' + content['received']['CPEE-INSTANCE-UUID'] + '/parent',notification['instance-uuid'])
+            multi.set(File.join(engine,notification['instance-uuid'],'child'),content['received']['CPEE-INSTANCE-UUID'])
+            multi.set(File.join(engine,content['received']['CPEE-INSTANCE-UUID'],'parent'),notification['instance-uuid'])
+          end
+        elsif topic == 'status'  && event_name == 'resource_utilization'
+          redis.multi do |multi|
+            multi.set(File.join(engine,'cpu'),content['utime'] + content['stime'])
+            multi.set(File.join(engine,'mem'),content['mib'])
+          end
+          receivers.each do |conn|
+            conn.send :topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :cpu => content['utime'] + content['stime'], :mem => content['mib']
           end
         elsif topic == 'node'  && event_name == 'resource_utilization'
           redis.multi do |multi|
-            multi.set('instance:' + notification['instance-uuid'] + '/cpu',content['utime'] + content['stime'])
-            multi.set('instance:' + notification['instance-uuid'] + '/mem',content['mib'])
+            multi.set(File.join(engine,'cpu_usage'),content['cpu_usage'])
+            multi.set(File.join(engine,'mem_free'),content['mem_free'])
+            multi.set(File.join(engine,'mem_total'),content['mem_total'])
+            multi.set(File.join(engine,'mem_available'),content['mem_available'])
+          end
+          receivers.each do |conn|
+            conn.send :topic => topic, :event => event_name, :engine => engine, :cpu_usage => content['cpu_usage'], :mem_free => content['mem_free'], :mem_total => content['mem_total'], :mem_available => content['mem_available']
           end
         end
       end
     end #}}}
 
     def self::implementation(opts)
-      opts[:connections] = []
+      opts[:management_receivers] = []
+      opts[:stat_receivers] = []
 
       ### set redis_cmd to nil if you want to do global
       ### at least redis_path or redis_url and redis_db have to be set if you do global
@@ -708,29 +735,30 @@ module CPEE
 
       Proc.new do
         interface 'events' do
-          run Events, opts if post 'event'
+          run StatSend, opts[:stat_receivers] if sse
+          run StatReceive, opts[:redis], opts[:stat_receivers] if post 'event'
         end
         interface 'implementation' do
           run GetList, :main, opts[:views], opts[:models] if get 'stage'
           run GetListFull, opts[:views], opts[:models] if get 'full'
           run GetStages, opts[:themes] if get 'stages'
-          run Create, :main, :cre, opts[:views], opts[:connections], opts[:templates], opts[:models] if post 'item'
-          run Create, :main, :dup, opts[:views], opts[:connections], opts[:templates], opts[:models] if post 'duplicate'
-          run CreateDir, opts[:connections], opts[:models] if post 'dir'
-          run Active, opts[:connections] if sse
+          run Create, :main, :cre, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
+          run Create, :main, :dup, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'duplicate'
+          run CreateDir, opts[:management_receivers], opts[:models] if post 'dir'
+          run ManagementSend, opts[:management_receivers] if sse
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
             run GetList, :sub, opts[:views], opts[:models] if get 'stage'
-            run Create, :sub, :cre, opts[:views], opts[:connections], opts[:templates], opts[:models] if post 'item'
-            run Create, :sub, :dup, opts[:views], opts[:connections], opts[:templates], opts[:models] if post 'duplicate'
-            run DeleteDir, opts[:connections], opts[:models] if delete
-            run RenameDir, opts[:connections], opts[:models] if put 'name'
+            run Create, :sub, :cre, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
+            run Create, :sub, :dup, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'duplicate'
+            run DeleteDir, opts[:management_receivers], opts[:models] if delete
+            run RenameDir, opts[:management_receivers], opts[:models] if put 'name'
             on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-              run DeleteItem, :sub, opts[:connections], opts[:models] if delete
+              run DeleteItem, :sub, opts[:management_receivers], opts[:models] if delete
               run GetItem, :sub, opts[:models] if get
-              run PutItem, :sub, opts[:connections], opts[:models] if put 'content'
-              run RenameItem, :sub, opts[:connections], opts[:models] if put 'name'
-              run MoveItem, :sub, opts[:connections], opts[:models] if put 'dirname'
-              run ShiftItem, :sub, opts[:connections], opts[:themes], opts[:models] if put 'newstage'
+              run PutItem, :sub, opts[:management_receivers], opts[:models] if put 'content'
+              run RenameItem, :sub, opts[:management_receivers], opts[:models] if put 'name'
+              run MoveItem, :sub, opts[:management_receivers], opts[:models] if put 'dirname'
+              run ShiftItem, :sub, opts[:management_receivers], opts[:themes], opts[:models] if put 'newstage'
               on resource 'open' do
                 run OpenItem, :sub, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models] if get 'stage'
               end
@@ -740,12 +768,12 @@ module CPEE
             end
           end
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-            run DeleteItem, :main, opts[:connections], opts[:models] if delete
+            run DeleteItem, :main, opts[:management_receivers], opts[:models] if delete
             run GetItem, :main, opts[:models] if get
-            run PutItem, :main, opts[:connections], opts[:models] if put 'content'
-            run RenameItem, :main, opts[:connections], opts[:models] if put 'name'
-            run MoveItem, :main, opts[:connections], opts[:models] if put 'dirname'
-            run ShiftItem, :main, opts[:connections], opts[:themes], opts[:models] if put 'newstage'
+            run PutItem, :main, opts[:management_receivers], opts[:models] if put 'content'
+            run RenameItem, :main, opts[:management_receivers], opts[:models] if put 'name'
+            run MoveItem, :main, opts[:management_receivers], opts[:models] if put 'dirname'
+            run ShiftItem, :main, opts[:management_receivers], opts[:themes], opts[:models] if put 'newstage'
             on resource 'open' do
               run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models] if get 'stage'
             end
@@ -754,6 +782,7 @@ module CPEE
             end
           end
         end
+        on resource 'dash'
       end
     end
 
