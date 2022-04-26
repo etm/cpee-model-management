@@ -1,12 +1,15 @@
 <description xmlns="http://riddl.org/ns/description/1.0" xmlns:ann="http://riddl.org/ns/annotation/1.0" xmlns:xi="http://www.w3.org/2001/XInclude" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <message name="engine">
+    <parameter name="engine" type="string"/>
+  </message>
   <message name="stats">
-    <parameter name="stats" mimetype="text/xml"/>
+    <parameter name="stats" mimetype="application/json"/>
   </message>
   <message name="tree">
     <parameter name="tree" mimetype="text/xml"/>
   </message>
   <message name="instance">
-    <parameter name="tree" mimetype="text/xml"/>
+    <parameter name="instance" mimetype="application/json"/>
   </message>
   <message name="item">
     <parameter name="stage" type="string">
@@ -108,13 +111,13 @@
         <sse/>
       </resource>
       <resource relative="instances">
-        <get out="tree"/>
+        <get in="engine" out="tree"/>
         <resource>
-          <get out="instance"/>
+          <get in="engine" out="instance"/>
         </resource>
       </resource>
       <resource relative="stats">
-        <get out="stats"/>
+        <get in="engine" out="stats"/>
       </resource>
     </resource>
   </resource>

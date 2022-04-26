@@ -643,12 +643,14 @@ module CPEE
         prefix = File.join(engine,notification['instance-uuid'].to_s)
 
         if topic == 'state'  && event_name == 'change'
-          send[:state] = content['state']
           if %w{abandoned finished}.include?(content['state'])
             if child = redis.get(File.join(prefix,'child'))
               parent = redis.get(File.join(prefix,'parent'))
             end
+            oldstate = redis.get(File.join(prefix,'state'))
             redis.multi do |multi|
+              multi.decr(File.join(engine,oldstate)) rescue nil
+              multi.incr(File.join(engine,'total_' + content['state']))
               multi.lrem(File.join(engine,'instances'),0,notification['instance-uuid'])
               multi.del(File.join(prefix,'author'))
               multi.del(File.join(prefix,'path'))
@@ -669,26 +671,39 @@ module CPEE
           elsif %w{ready}.include?(content['state'])
             exi = true if redis.lrange(File.join(engine,'instances'),0,-1).include?(notification['instance-uuid'])
             redis.multi do |multi|
-              multi.rpush(File.join(engine,'instances'),notification['instance-uuid']) unless exi
+              unless exi
+                multi.incr(File.join(engine,'total_created'))
+                multi.incr(File.join(engine,'ready'))
+                multi.rpush(File.join(engine,'instances'),notification['instance-uuid'])
+              end
+              multi.set(File.join(prefix,'instance-url'),notification['instance-url'])
               multi.set(File.join(prefix,'author'),attr['author'])
+              multi.set(File.join(prefix,'state'),content['state'])
               multi.set(File.join(prefix,'path'),File.join(attr['design_dir'],attr['info']+'.xml')) unless attr['design_dir'].nil? || attr['info'].nil?
               multi.set(File.join(prefix,'name'),attr['info'])
               multi.set(File.join(prefix,'cpu'),0)
               multi.set(File.join(prefix,'mem'),0)
             end
+          elsif %w{stopping}.include?(content['state'])
+            redis.set(File.join(prefix,'state'),content['state'])
           elsif %w{stopped}.include?(content['state'])
             redis.multi do |multi|
+              multi.decr(File.join(engine,'running'))
+              multi.incr(File.join(engine,'stopped'))
               multi.set(File.join(prefix,'state'),content['state'])
               multi.set(File.join(prefix,'cpu'),0)
               multi.set(File.join(prefix,'mem'),0)
             end
-          else
+          elsif %w{running}.include?(content['state'])
+            oldstate = redis.get(File.join(prefix,'state'))
             redis.multi do |multi|
+              multi.decr(File.join(engine,oldstate)) rescue nil
+              multi.incr(File.join(engine,'running'))
               multi.set(File.join(prefix,'state'),content['state'])
             end
           end
           receivers.each do |conn|
-            conn.send :topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :state => content['state']
+            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :state => content['state'])
           end
         elsif topic == 'task'  && event_name == 'instantiation'
           redis.multi do |multi|
@@ -697,11 +712,11 @@ module CPEE
           end
         elsif topic == 'status'  && event_name == 'resource_utilization'
           redis.multi do |multi|
-            multi.set(File.join(engine,'cpu'),content['utime'] + content['stime'])
-            multi.set(File.join(engine,'mem'),content['mib'])
+            multi.set(File.join(prefix,'cpu'),content['utime'] + content['stime'])
+            multi.set(File.join(prefix,'mem'),content['mib'])
           end
           receivers.each do |conn|
-            conn.send :topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :cpu => content['utime'] + content['stime'], :mem => content['mib']
+            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :cpu => content['utime'] + content['stime'], :mem => content['mib'])
           end
         elsif topic == 'node'  && event_name == 'resource_utilization'
           redis.multi do |multi|
@@ -711,11 +726,69 @@ module CPEE
             multi.set(File.join(engine,'mem_available'),content['mem_available'])
           end
           receivers.each do |conn|
-            conn.send :topic => topic, :event => event_name, :engine => engine, :cpu_usage => content['cpu_usage'], :mem_free => content['mem_free'], :mem_total => content['mem_total'], :mem_available => content['mem_available']
+            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :cpu_usage => content['cpu_usage'], :mem_free => content['mem_free'], :mem_total => content['mem_total'], :mem_available => content['mem_available'])
           end
         end
       end
     end #}}}
+
+    class StatGet < Riddl::Implementation #{{{
+      def response
+        redis = @a[0]
+        engine = @p[0].value
+        res = redis.mapped_mget(
+          File.join(engine,'total_created'),
+          File.join(engine,'total_finished'),
+          File.join(engine,'total_abandoned'),
+          File.join(engine,'ready'),
+          File.join(engine,'stopped'),
+          File.join(engine,'running')
+        ).transform_keys{ |k| File.basename(k) }.transform_values(&:to_i)
+        Riddl::Parameter::Complex.new('stats','application/json',JSON::pretty_generate(res || []))
+      end
+    end #}}}
+    class InstancesGet < Riddl::Implementation #{{{
+      def response
+        redis = @a[0]
+        engine = @p[0].value
+        doc = XML::Smart.string('<instances/>')
+        redis.lrange(File.join(engine,'instances'),0,-1).each do |i|
+          prefix = File.join(engine,i.to_s)
+          url, author, path, name, state, cpu, mem, parent = redis.mget(
+            File.join(prefix,'instance-url'),
+            File.join(prefix,'author'),
+            File.join(prefix,'path'),
+            File.join(prefix,'name'),
+            File.join(prefix,'state'),
+            File.join(prefix,'cpu'),
+            File.join(prefix,'mem'),
+            File.join(prefix,'parent')
+          )
+          doc.root.add('instance', :uuid => i, :url => url, :author => author, :path => path, :name => name, :state => state, :cpu => cpu, :mem => mem, :parent => parent)
+        end
+        Riddl::Parameter::Complex.new('tree','text/xml',doc.to_s)
+      end
+    end #}}}
+    class InstanceGet < Riddl::Implementation #{{{
+      def response
+        redis = @a[0]
+        engine = @p[0].value
+        uuid = @r[-1]
+        prefix = File.join(engine,uuid.to_s)
+        url, author, path, name, state, cpu, mem, parent = redis.mget(
+          File.join(prefix,'instance-url'),
+          File.join(prefix,'author'),
+          File.join(prefix,'path'),
+          File.join(prefix,'name'),
+          File.join(prefix,'state'),
+          File.join(prefix,'cpu'),
+          File.join(prefix,'mem'),
+          File.join(prefix,'parent')
+        )
+        Riddl::Parameter::Complex.new('instance','application/json',JSON.generate(:uuid => uuid, :url => url, :author => author, :path => path, :name => name, :state => state, :cpu => cpu, :mem => mem, :parent => parent))
+      end
+    end #}}}
+
 
     def self::implementation(opts)
       opts[:management_receivers] = []
@@ -735,7 +808,6 @@ module CPEE
 
       Proc.new do
         interface 'events' do
-          run StatSend, opts[:stat_receivers] if sse
           run StatReceive, opts[:redis], opts[:stat_receivers] if post 'event'
         end
         interface 'implementation' do
@@ -781,8 +853,21 @@ module CPEE
               run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models] if get 'stage'
             end
           end
+          on resource 'dash' do
+            on resource 'events' do
+              run StatSend, opts[:stat_receivers] if sse
+            end
+            on resource 'instances' do
+              run InstancesGet, opts[:redis] if get 'engine'
+              on resource do
+                run InstanceGet, opts[:redis] if get 'engine'
+              end
+            end
+            on resource 'stats' do
+              run StatGet, opts[:redis] if get 'engine'
+            end
+          end
         end
-        on resource 'dash'
       end
     end
 

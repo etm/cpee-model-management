@@ -44,17 +44,17 @@ function delete_it(name) {
   }
 }
 
-function es_init(gdir,gstage) {
+function design_init(gdir,gstage) {
   var es = new EventSource('server/');
   es.onopen = function() {
-    console.log('es open');
+    console.log('design open');
   };
   es.onmessage = function(e) {
     paint(gdir,gstage);
   };
   es.onerror = function() {
-    console.log('es error');
-    // es_init();
+    console.log('design error');
+    // design_init();
   };
 }
 
@@ -114,7 +114,7 @@ $(document).ready(function() {
   gstage = urlParams.get('stage') || 'draft';
   gdir = urlParams.get('dir') ? (urlParams.get('dir') + '/').replace(/\/+/,'/') : '';
 
-  es_init(gdir,gstage);
+  design_init(gdir,gstage);
 
   var shifts = []
   $.ajax({

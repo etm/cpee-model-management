@@ -1,0 +1,9 @@
+#resource_utilization h1 {
+  font-size: 1.2em;
+  border-bottom: 0.1em solid var(--x-ui-border-color);
+}
+
+#resource_utilization table {
+  margin-left: 1.3em;
+}
+

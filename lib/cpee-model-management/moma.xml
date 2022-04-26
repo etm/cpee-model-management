@@ -11,8 +11,6 @@
       <layer name="implementation">
         <apply-to>/</apply-to>
       </layer>
-    </tile>
-    <tile>
       <layer name="events">
         <apply-to>/dash/events</apply-to>
       </layer>
