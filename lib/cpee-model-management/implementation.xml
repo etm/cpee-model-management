@@ -109,10 +109,13 @@
       <resource relative="open"><get in="stage"/></resource>
       <resource relative="open-new"><get in="stage"/></resource>
     </resource>
-    <resource relative="show">
-      <get in="url"/>
-    </resource>
     <resource relative="dash">
+      <resource relative="show">
+        <get in="url"/>
+      </resource>
+      <resource relative="abandon">
+        <put in="url"/>
+      </resource>
       <resource relative="events">
         <sse/>
       </resource>

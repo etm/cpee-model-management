@@ -55,28 +55,65 @@ function stats_add(ename) {
 function instance_change(d) {
   const ename = d.engine
   const iname = d.engine.replace(/[^a-z0-9A-Z]/g,'-').replace(/-$/,'')
-  $('#instances_' + iname).empty()
-  $.ajax({
-    type: "GET",
-    url: 'server/dash/instances',
-    data: { engine: ename },
-    success: (result) => {
-      $('instance',result).each((i,ele)=>{
-        const e = $(ele);
-        instance_add(iname,e.attr('uuid'),e.attr('url'),e.attr('name'),e.attr('state'),e.attr('author'),e.attr('cpu'),e.attr('mem'),e.attr('parent'))
-      })
+
+  if (d.state == "ready") {
+    if ($('[data-id=' + d.uuid + ']').length > 0) {
+      if ($('[data-id=' + d.uuid + ']').attr('data-parent') != parent) {
+        $('[data-id=' + d.uuid + ']').remove()
+        instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.parent)
+      } else {
+        instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.parent)
+      }
+    } else {
+      instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.parent)
     }
-  })
+  } else if (d.state == 'abandoned' || d.state == 'finished') {
+    if ($('tr.sub[data-id=' + d.uuid + '] > td > table > tr').length > 0) {
+      $('tr.text[data-id=' + d.uuid + ']').replaceWith($('tr.sub[data-id=' + d.uuid + '] > td > table > tr'))
+    }
+    $('[data-id=' + d.uuid + ']').remove()
+  } else {
+    if ($('tr.sub[data-id=' + d.uuid + ']').attr('data-parent') != d.parent) {
+      $('[data-id=' + d.uuid + ']').remove()
+      instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.parent)
+    } else {
+      instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.parent)
+    }
+  }
 }
 
+function abandon_instance(target) {
+  console.log(target);
+}
+
+function instance_upd(uuid,name,state,author,cpu,mem,parent) {
+  if (name != "") {
+    $('[data-id=' + uuid + '] > .name a').text(name)
+  }
+  $('[data-id=' + uuid + '] > .state span.value').text(state)
+  $('[data-id=' + uuid + '] > .state').attr('data-state',state)
+  if (author != "") {
+    $('[data-id=' + uuid + '] > .author').text(author)
+  }
+  instance_res(uuid,cpu,mem)
+}
+function instance_res(uuid,cpu,mem) {
+  $('[data-id=' + uuid + '] > .cpu').text($.sprintf('%05.2f',cpu))
+  $('[data-id=' + uuid + '] > .mem').text($.sprintf('%05.2f',mem))
+}
 function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
   let inode = document.importNode($("#stats_instance")[0].content,true);
   $('.sub',inode).attr('id',uuid)
-  $('.name a',inode).attr('href','server/show?url=' + url)
+  $('.sub',inode).attr('data-id',uuid)
+  $('.sub',inode).attr('data-parent',parent)
+  $('.text',inode).attr('data-id',uuid)
+  $('.text',inode).attr('data-url',url)
+  $('.name a',inode).attr('href','server/dash/show?url=' + url)
   if (name != "") {
     $('.name a',inode).text(name)
   }
-  $('.state',inode).text(state)
+  $('.state span.value',inode).text(state)
+  $('.state',inode).attr('data-state',state)
   if (author != "") {
     $('.author',inode).text(author)
   }
@@ -137,6 +174,8 @@ function stats_init() {
     } else if (data.topic == "state" && data.event == "change") {
       stats_update(data.engine)
       instance_change(data)
+    } else if (data.topic == "status" && data.event == "resource_utilization") {
+      instance_res(data.uuid,data.cpu,data.mem)
     } else {
       console.log(data);
     }
@@ -148,4 +187,13 @@ function stats_init() {
 
 $(document).ready(function() {
   stats_init();
+  $('#instances').on('click','.abandon',function(e){
+    const par = $(e.target).parents('[data-url]').first()
+    $.ajax({
+      type: "PUT",
+      url: 'server/dash/abandon',
+      data: { url: par.attr('data-url') }
+    })
+  })
+
 });

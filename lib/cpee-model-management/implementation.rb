@@ -515,6 +515,18 @@ module CPEE
         @headers << Riddl::Header.new('Location',show + @p.first.value)
       end
     end #}}}
+    class AbandonUrl < Riddl::Implementation #{{{
+      def response
+        aba = @p.first.value
+        res1 = Typhoeus.get(File.join(aba,'properties','state','/'))
+        if res1.success?
+          if res1.response_body == 'ready' || res1.response_body == 'stopped'
+            Typhoeus.put(File.join(aba,'properties','state','/'), headers: {'Content-Type' => 'application/x-www-form-urlencoded'}, body: "value=abandoned")
+          end
+        end
+        nil
+      end
+    end #}}}
 
     class MoveItem < Riddl::Implementation #{{{
       def response
@@ -652,29 +664,32 @@ module CPEE
 
         if topic == 'state'  && event_name == 'change'
           if %w{abandoned finished}.include?(content['state'])
-            if child = redis.get(File.join(prefix,'child'))
-              parent = redis.get(File.join(prefix,'parent'))
-            end
+            parent = redis.get(File.join(prefix,'parent'))
             oldstate = redis.get(File.join(prefix,'state'))
+            children = redis.lrange(File.join(prefix,'children'),0,-1)
             redis.multi do |multi|
               multi.decr(File.join(engine,oldstate)) rescue nil
               multi.incr(File.join(engine,'total_' + content['state']))
               multi.lrem(File.join(engine,'instances'),0,notification['instance-uuid'])
+              multi.del(File.join(prefix,'instance-url'))
               multi.del(File.join(prefix,'author'))
               multi.del(File.join(prefix,'path'))
               multi.del(File.join(prefix,'name'))
               multi.del(File.join(prefix,'state'))
               multi.del(File.join(prefix,'cpu'))
               multi.del(File.join(prefix,'mem'))
-              if child
+              children.each do |child|
                 if parent
-                  multi.set(File.join(prefix,child,'parent'),parent)
+                  multi.set(File.join(engine,child,'parent'),parent)
                 else
-                  multi.del(File.join(prefix,child,'parent'))
+                  multi.del(File.join(engine,child,'parent'))
                 end
               end
-              multi.del(File.join(prefix,'child'))
+              multi.del(File.join(prefix,'children'))
               multi.del(File.join(prefix,'parent'))
+              if parent
+                multi.lrem(File.join(engine,parent,'children'),0,notification['instance-uuid'].to_s)
+              end
             end
           elsif %w{ready}.include?(content['state'])
             exi = true if redis.lrange(File.join(engine,'instances'),0,-1).include?(notification['instance-uuid'])
@@ -710,13 +725,34 @@ module CPEE
               multi.set(File.join(prefix,'state'),content['state'])
             end
           end
+
+          url, author, path, name, state, parent = redis.mget(
+            File.join(prefix,'instance-url'),
+            File.join(prefix,'author'),
+            File.join(prefix,'path'),
+            File.join(prefix,'name'),
+            File.join(prefix,'state'),
+            File.join(prefix,'parent')
+          )
           receivers.each do |conn|
-            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :state => content['state'])
+            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :url => url, :author => author, :path => path.to_s, :name => name, :state => content['state'], :parent => parent.to_s)
           end
         elsif topic == 'task'  && event_name == 'instantiation'
           redis.multi do |multi|
-            multi.set(File.join(engine,notification['instance-uuid'],'child'),content['received']['CPEE-INSTANCE-UUID'])
+            multi.rpush(File.join(engine,notification['instance-uuid'],'children'),content['received']['CPEE-INSTANCE-UUID'])
             multi.set(File.join(engine,content['received']['CPEE-INSTANCE-UUID'],'parent'),notification['instance-uuid'])
+          end
+          prefix = File.join(engine,content['received']['CPEE-INSTANCE-UUID'].to_s)
+          url, author, path, name, state, parent = redis.mget(
+            File.join(prefix,'instance-url'),
+            File.join(prefix,'author'),
+            File.join(prefix,'path'),
+            File.join(prefix,'name'),
+            File.join(prefix,'state'),
+            File.join(prefix,'parent')
+          )
+          receivers.each do |conn|
+            conn.send JSON::generate(:topic => 'state', :event => 'change', :engine => engine, :uuid => content['received']['CPEE-INSTANCE-UUID'], :url => url, :author => author, :path => path.to_s, :name => name, :state => state, :parent => parent.to_s)
           end
         elsif topic == 'status'  && event_name == 'resource_utilization'
           redis.multi do |multi|
@@ -861,10 +897,13 @@ module CPEE
               run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models] if get 'stage'
             end
           end
-          on resource 'show' do
-            run ShowUrl, opts[:show] if get 'url'
-          end
           on resource 'dash' do
+            on resource 'show' do
+              run ShowUrl, opts[:show] if get 'url'
+            end
+            on resource 'abandon' do
+              run AbandonUrl if put 'url'
+            end
             on resource 'events' do
               run StatSend, opts[:stat_receivers] if sse
             end

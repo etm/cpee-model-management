@@ -27,7 +27,10 @@
   width: 12em;
 }
 .instances .state {
-  width: 5em
+  width: 7em
+}
+.instances .state:not([data-state=ready]):not([data-state=stopped]) > span.abandon {
+  display: none;
 }
 .instances .author {
   width: 12em
