@@ -508,6 +508,14 @@ module CPEE
         nil
       end
     end #}}}
+    class ShowUrl < Riddl::Implementation #{{{
+      def response
+        show = @a[0]
+        @status = 302
+        @headers << Riddl::Header.new('Location',show + @p.first.value)
+      end
+    end #}}}
+
     class MoveItem < Riddl::Implementation #{{{
       def response
         where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
@@ -852,6 +860,9 @@ module CPEE
             on resource 'open-new' do
               run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models] if get 'stage'
             end
+          end
+          on resource 'show' do
+            run ShowUrl, opts[:show] if get 'url'
           end
           on resource 'dash' do
             on resource 'events' do

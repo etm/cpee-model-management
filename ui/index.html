@@ -167,8 +167,26 @@
         </ui-area>
         <ui-area data-belongs-to-tab="instances" class="inactive">
           <p>
-            Show running and stopped instances.
+            Show ready, running and stopped instances.
           </p>
+          <template id="stats_instances">
+            <h1 class="stats_title">Engine: </h1>
+            <table class='instances'></table>
+          </template>
+          <template id="stats_instance">
+            <tr class="text">
+              <td class="tattr name"><a href='' target='_blank'><em>no name</em></a></td>
+              <td class="tattr state"></td>
+              <td class="tattr author"><em>unknown</em></td>
+              <td class="tattr cpu"></td>
+              <td>/</td>
+              <td class="tattr mem"></em></td>
+            </tr>
+            <tr class="sub">
+              <td colspan="6"><table></table></td>
+            </tr>
+          </template>
+          <div id='instances'></div>
         </ui-area>
         <ui-area data-belongs-to-tab="stats" class="inactive">
           <p>

@@ -7,3 +7,45 @@
   margin-left: 1.3em;
 }
 
+#instances h1 {
+  font-size: 1.2em;
+  border-bottom: 0.1em solid var(--x-ui-border-color);
+}
+
+.instances .text {
+  white-space: nowrap;
+}
+.instances .text > td {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-righ: 1em;
+}
+
+.instances .name {
+  width: 12em;
+}
+.instances .state {
+  width: 5em
+}
+.instances .author {
+  width: 12em
+}
+
+.instances tr.sub, .instances tr.sub > td {
+  margin:0;
+  padding:0;
+}
+
+.instances .sub table {
+  margin-left: 1em;
+}
+.instances .sub table > tr.text > td:first-child::before {
+  content: '⤷';
+  margin-right: 0.5em;
+}
+
+.instances tr.text:nth-child(4n+1) td {
+  background-color: var(--x-ui-content-light-background);
+}

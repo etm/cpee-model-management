@@ -1,4 +1,7 @@
 <description xmlns="http://riddl.org/ns/description/1.0" xmlns:ann="http://riddl.org/ns/annotation/1.0" xmlns:xi="http://www.w3.org/2001/XInclude" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <message name="url">
+    <parameter name="url" type="string"/>
+  </message>
   <message name="engine">
     <parameter name="engine" type="string"/>
   </message>
@@ -105,6 +108,9 @@
       <put in="newstage"/> <!-- shift -->
       <resource relative="open"><get in="stage"/></resource>
       <resource relative="open-new"><get in="stage"/></resource>
+    </resource>
+    <resource relative="show">
+      <get in="url"/>
     </resource>
     <resource relative="dash">
       <resource relative="events">
