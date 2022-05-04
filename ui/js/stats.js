@@ -72,6 +72,7 @@ function instance_change(d) {
       $('tr.text[data-id=' + d.uuid + ']').replaceWith($('tr.sub[data-id=' + d.uuid + '] > td > table > tr'))
     }
     $('[data-id=' + d.uuid + ']').remove()
+    instances_striping(iname)
   } else {
     if ($('tr.sub[data-id=' + d.uuid + ']').attr('data-parent') != d.parent) {
       $('[data-id=' + d.uuid + ']').remove()
@@ -109,6 +110,7 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
   $('.text',inode).attr('data-id',uuid)
   $('.text',inode).attr('data-url',url)
   $('.name a',inode).attr('href','server/dash/show?url=' + url)
+  $('.num span',inode).text(url.split(/[\\/]/).pop())
   if (name != "") {
     $('.name a',inode).text(name)
   }
@@ -124,16 +126,18 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
   } else {
     $('#' + parent + ' > td > table').append(inode)
   }
+  instances_striping(iname)
+}
 
+function instances_striping(iname) {
   let even = true
-  console.log($('#instances_' + iname + ' tr.text'));
   $('#instances_' + iname + ' tr.text').removeClass('even')
   $('#instances_' + iname + ' tr.text').each((i,e)=>{
     if (even) {
       $(e).addClass('even')
     }
     even = (even == true ? false : true)
-  });
+  })
 }
 
 function instances_init(ename) {

@@ -20,7 +20,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-righ: 1em;
+  padding-right: 0.5em;
+  padding-left: 0.5em;
 }
 
 .instances .name {
@@ -42,7 +43,7 @@
 }
 
 .instances .sub table {
-  margin-left: 1em;
+  margin-left: 0.8em;
 }
 .instances .sub table > tr.text > td:first-child::before {
   content: '⤷';
