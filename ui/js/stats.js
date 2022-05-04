@@ -124,6 +124,16 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
   } else {
     $('#' + parent + ' > td > table').append(inode)
   }
+
+  let even = true
+  console.log($('#instances_' + iname + ' tr.text'));
+  $('#instances_' + iname + ' tr.text').removeClass('even')
+  $('#instances_' + iname + ' tr.text').each((i,e)=>{
+    if (even) {
+      $(e).addClass('even')
+    }
+    even = (even == true ? false : true)
+  });
 }
 
 function instances_init(ename) {

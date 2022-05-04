@@ -49,6 +49,6 @@
   margin-right: 0.5em;
 }
 
-.instances tr.text:nth-child(4n+1) td {
+.instances tr.text.even td {
   background-color: var(--x-ui-content-light-background);
 }
