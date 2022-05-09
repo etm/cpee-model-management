@@ -66,7 +66,7 @@
         <ui-tab class="inactive" data-tab="newdir"   >New Dir</ui-tab>
         <ui-space                                    ></ui-space>
         <ui-tab class="inactive" data-tab="instances">Instances</ui-tab>
-        <ui-tab class="inactive" data-tab="stats"    >Stats</ui-tab>
+        <ui-tab class="inactive" data-tab="resources">Resources</ui-tab>
         <ui-behind                                   ><span></span></ui-behind>
         <ui-last                                     ><a class="logo" href=".."></a></ui-last>
       </ui-tabbar>
@@ -189,7 +189,7 @@
           </template>
           <div id='instances'></div>
         </ui-area>
-        <ui-area data-belongs-to-tab="stats" class="inactive">
+        <ui-area data-belongs-to-tab="resources" class="inactive">
           <p>
             Show statistics about instances per server, and metrics about the health of the environment.
           </p>
@@ -219,7 +219,7 @@
                </table>
             </div>
           </template>
-          <div id='resource_utilization'></div>
+          <div id='resources'></div>
         </ui-area>
       </ui-content>
     </ui-rest>

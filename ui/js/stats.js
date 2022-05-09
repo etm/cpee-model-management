@@ -1,6 +1,6 @@
 var value_count = 100
 
-function stats_update(ename) {
+function resource_update(ename) {
   var iname = ename.replace(/[^a-z0-9A-Z]/g,'-').replace(/-$/,'')
   $.get('server/dash/stats/',{ engine: ename },function(data){
     $('#resource_utilization_text_' + iname + ' .total_created').text(data.total_created)
@@ -12,15 +12,16 @@ function stats_update(ename) {
   });
 }
 
-function stats_add(ename) {
+function resource_add(ename) {
   let inode = document.importNode($("#stats_engine")[0].content,true);
   var iname = ename.replace(/[^a-z0-9A-Z]/g,'-').replace(/-$/,'')
   $('.stats_title',inode).text($('.stats_title',inode).text() + ename)
   $('.stats_plot',inode).attr('id','resource_utilization_plot_'+iname)
   $('.stats_text',inode).attr('id','resource_utilization_text_'+iname)
-  stats_update(ename);
 
-  $('#resource_utilization').append(inode)
+  $('#resources').append(inode)
+
+  resource_update(ename);
 
   var trace1 = {
     y: Array(value_count).fill(0),
@@ -81,10 +82,6 @@ function instance_change(d) {
       instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.parent)
     }
   }
-}
-
-function abandon_instance(target) {
-  console.log(target);
 }
 
 function instance_upd(uuid,name,state,author,cpu,mem,parent) {
@@ -159,6 +156,18 @@ function instances_init(ename) {
   })
 }
 
+function resource_paint(iname,data,count) {
+  count[iname]++
+  Plotly.extendTraces('resource_utilization_plot_' + iname, {y: [[data.cpu_usage], [(data.mem_total-data.mem_available)/data.mem_total * 100]]}, [0,1])
+  Plotly.relayout('resource_utilization_plot_' + iname, {
+    xaxis: {
+      range: [count[iname]-value_count,count[iname]],
+      showticklabels: false,
+      fixedrange: true
+    }
+  });
+}
+
 function stats_init() {
   let es = new EventSource('server/dash/events/');
   let count = {};
@@ -168,28 +177,30 @@ function stats_init() {
   es.onmessage = function(e) {
     let data = JSON.parse(e.data)
     const iname = data.engine.replace(/[^a-z0-9A-Z]/g,'-').replace(/-$/,'')
-    if ($('#instances_' + iname).length == 0) {
-      instances_init(data.engine);
+    if ($('#instances').length > 0) {
+      if ($('#instances_' + iname).length == 0) {
+        instances_init(data.engine);
+      }
     }
     if (data.topic == "node" && data.event == "resource_utilization") {
-      if ($('#resource_utilization_plot_' + iname).length == 0) {
-        stats_add(data.engine);
-        count[data.engine] = value_count;
-      }
-      count[data.engine]++
-      Plotly.extendTraces('resource_utilization_plot_' + iname, {y: [[data.cpu_usage], [(data.mem_total-data.mem_available)/data.mem_total * 100]]}, [0,1])
-      Plotly.relayout('resource_utilization_plot_' + iname, {
-        xaxis: {
-          range: [count[data.engine]-value_count,count[data.engine]],
-          showticklabels: false,
-          fixedrange: true
+      if ($('#resources').length > 0) {
+        if ($('#resource_utilization_plot_' + iname).length == 0) {
+          resource_add(data.engine);
+          count[iname] = value_count;
         }
-      });
+        resource_paint(iname,data,count)
+      }
     } else if (data.topic == "state" && data.event == "change") {
-      stats_update(data.engine)
-      instance_change(data)
+      if ($('#resources').length > 0) {
+        resource_update(data.engine)
+      }
+      if ($('#instances').length > 0) {
+        instance_change(data)
+      }
     } else if (data.topic == "status" && data.event == "resource_utilization") {
-      instance_res(data.uuid,data.cpu,data.mem)
+      if ($('#instances').length > 0) {
+        instance_res(data.uuid,data.cpu,data.mem)
+      }
     } else {
       console.log(data);
     }
@@ -209,5 +220,4 @@ $(document).ready(function() {
       data: { url: par.attr('data-url') }
     })
   })
-
 });

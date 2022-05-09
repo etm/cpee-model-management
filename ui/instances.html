@@ -1,0 +1,84 @@
+<!--
+  This file is part of CPEE-MODEL-MANAGEMENT.
+
+  CPEE-MODEL-MANAGEMENT is free software: you can redistribute it and/or
+  modify it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or (at your
+  option) any later version.
+
+  CPEE-MODEL-MANAGEMENT is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+  more details.
+
+  You should have received a copy of the GNU General Public License along with
+  CPEE-MODEL-MANAGEMENT (file LICENSE in the main directory).  If not, see
+  <http://www.gnu.org/licenses/>.
+-->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Instances</title>
+
+    <!-- libs, do not modify. When local than load local libs. -->
+    <script type="text/javascript" src="/js_libs/jquery.min.js"></script>
+    <script type="text/javascript" src="/js_libs/jquery.browser.js"></script>
+    <script type="text/javascript" src="/js_libs/jquery.svg.min.js"></script>
+    <script type="text/javascript" src="/js_libs/jquery.svgdom.min.js"></script>
+    <script type="text/javascript" src="/js_libs/vkbeautify.js"></script>
+    <script type="text/javascript" src="/js_libs/util.js"></script>
+    <script type="text/javascript" src="/js_libs/printf.js"></script>
+    <script type="text/javascript" src="/js_libs/strftime.min.js"></script>
+    <script type="text/javascript" src="/js_libs/parsequery.js"></script>
+    <script type="text/javascript" src="/js_libs/underscore.min.js"></script>
+    <script type="text/javascript" src="/js_libs/jquery.caret.min.js"></script>
+    <script type="text/javascript" src="/js_libs/jquery.cookie.js"></script>
+    <script type="text/javascript" src="/js_libs/plotly.min.js"></script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+
+    <script type="text/javascript" src="/js_libs/relaxngui.js"></script>
+
+    <script type="text/javascript" src="/js_libs/uidash.js"></script>
+    <script type="text/javascript" src="/js_libs/custommenu.js"></script>
+
+    <link   rel="stylesheet"      href="/js_libs/custommenu.css" type="text/css"/>
+    <link   rel="stylesheet"      href="/js_libs/uidash.css" type="text/css"/>
+
+    <link   rel="stylesheet"      href="/global_ui/ui.css" type="text/css"/>
+
+    <link   rel="stylesheet"      href="/js_libs/relaxngui.css" type="text/css"/>
+
+    <!-- custom stuff, play arround  -->
+    <link   rel="stylesheet"      href="css/design.css" type="text/css"/>
+    <link   rel="stylesheet"      href="css/stats.css" type="text/css"/>
+    <link   rel="stylesheet"      href="css/stats_standalone.css" type="text/css"/>
+    <script type="text/javascript" src="js/stats.js"></script>
+  </head>
+  <body is="x-ui-">
+    <p>
+      Show ready, running and stopped instances.
+    </p>
+    <template id="stats_instances">
+      <h1 class="stats_title">Engine: </h1>
+      <table class='instances'></table>
+    </template>
+    <template id="stats_instance">
+      <tr class="text">
+        <td class="name"><a href='' target='_blank'><em>no name</em></a></td>
+        <td class="num">(<span></span>)</td>
+        <td class="state"><span class='value'></span> <span class='abandon'>[<a href='#' title='abandon'>a</a>]</span></td>
+        <td class="author"><em>unknown</em></td>
+        <td class="cpu"></td>
+        <td>/</td>
+        <td class="mem"></em></td>
+      </tr>
+      <tr class="sub">
+        <td colspan="6"><table></table></td>
+      </tr>
+    </template>
+    <div id='instances'></div>
+  </body>
+</html>

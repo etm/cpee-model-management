@@ -1,0 +1,7 @@
+[is="x-ui-"] {
+  padding: 1em;
+}
+[is="x-ui-"] *:first-child {
+  padding-top: 0;
+  margin-top: 0;
+}
