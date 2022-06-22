@@ -87,6 +87,7 @@ function instance_change(d) {
 function instance_upd(uuid,name,state,author,cpu,mem,parent) {
   if (name != "") {
     $('[data-id=' + uuid + '] > .name a').text(name)
+    $('[data-id=' + uuid + '] > .name a').attr('title',name)
   }
   $('[data-id=' + uuid + '] > .state span.value').text(state)
   $('[data-id=' + uuid + '] > .state').attr('data-state',state)
@@ -110,6 +111,7 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
   $('.num span',inode).text(url.split(/[\\/]/).pop())
   if (name != "") {
     $('.name a',inode).text(name)
+    $('.name a',inode).attr('title',name)
   }
   $('.state span.value',inode).text(state)
   $('.state',inode).attr('data-state',state)
@@ -137,6 +139,8 @@ function instances_striping(iname) {
   })
 }
 
+function timer(ms) { return new Promise(res => setTimeout(res, ms)); }
+
 function instances_init(ename) {
   const iname = ename.replace(/[^a-z0-9A-Z]/g,'-').replace(/-$/,'')
   let inode = document.importNode($("#stats_instances")[0].content,true);
@@ -148,9 +152,9 @@ function instances_init(ename) {
     url: 'server/dash/instances',
     data: { engine: ename },
     success: (result) => {
-      $('instance',result).each((i,ele)=>{
+      $('instance',result).each(async (i,ele)=>{
         const e = $(ele);
-        instance_add(iname,e.attr('uuid'),e.attr('url'),e.attr('name'),e.attr('state'),e.attr('author'),e.attr('cpu'),e.attr('mem'),e.attr('parent'))
+        setTimeout(()=>{instance_add(iname,e.attr('uuid'),e.attr('url'),e.attr('name'),e.attr('state'),e.attr('author'),e.attr('cpu'),e.attr('mem'),e.attr('parent'))},0)
       })
     }
   })
