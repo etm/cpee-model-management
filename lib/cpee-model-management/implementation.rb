@@ -678,6 +678,7 @@ module CPEE
               multi.del(File.join(prefix,'state'))
               multi.del(File.join(prefix,'cpu'))
               multi.del(File.join(prefix,'mem'))
+              multi.del(File.join(prefix,'time'))
               children.each do |child|
                 if parent
                   multi.set(File.join(engine,child,'parent'),parent)
@@ -706,6 +707,7 @@ module CPEE
               multi.set(File.join(prefix,'name'),attr['info'])
               multi.set(File.join(prefix,'cpu'),0)
               multi.set(File.join(prefix,'mem'),0)
+              multi.set(File.join(prefix,'time'),0)
             end
           elsif %w{stopping}.include?(content['state'])
             redis.set(File.join(prefix,'state'),content['state'])
@@ -716,13 +718,16 @@ module CPEE
               multi.set(File.join(prefix,'state'),content['state'])
               multi.set(File.join(prefix,'cpu'),0)
               multi.set(File.join(prefix,'mem'),0)
+              multi.set(File.join(prefix,'time'),0)
             end
           elsif %w{running}.include?(content['state'])
             oldstate = redis.get(File.join(prefix,'state'))
             redis.multi do |multi|
               multi.decr(File.join(engine,oldstate)) rescue nil
               multi.incr(File.join(engine,'running'))
+              multi.set(File.join(prefix,'name'),attr['info'])
               multi.set(File.join(prefix,'state'),content['state'])
+              multi.set(File.join(prefix,'time'),Time.now.to_i)
             end
           end
 
@@ -756,6 +761,7 @@ module CPEE
           end
         elsif topic == 'status'  && event_name == 'resource_utilization'
           redis.multi do |multi|
+            multi.set(File.join(prefix,'name'),attr['info'])
             multi.set(File.join(prefix,'cpu'),content['utime'] + content['stime'])
             multi.set(File.join(prefix,'mem'),content['mib'])
           end
