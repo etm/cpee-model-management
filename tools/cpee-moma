@@ -8,6 +8,7 @@ require 'zip'
 require 'typhoeus'
 require 'json'
 require 'securerandom'
+require 'redis'
 
 def wrap(s, width=78, indent=18)
 	lines = []
@@ -62,10 +63,12 @@ ARGV.options { |opt|
   opt.on(wrap("[cpui DIR]        scaffolds a sample html client. New versions might require manual merging if you changed something."))
 	opt.on("")
   opt.on(wrap("[convert]         converts all testsets in the current directory to design terminology."))
+	opt.on("")
+  opt.on(wrap("[consistent]      makes the instances db consistent. can only be run in server dir."))
   opt.parse!
 }
 if (ARGV.length == 0) ||
-   (ARGV.length == 1  && !(%w(convert).include?(ARGV[0]))) ||
+   (ARGV.length == 1  && !(%w(convert consistent).include?(ARGV[0]))) ||
    (ARGV.length == 2  && !(%w(cpui new).include?(ARGV[0]))) ||
    (ARGV.length >  2)
   puts ARGV.options
@@ -181,6 +184,62 @@ elsif command == 'convert'
 
     File.unlink(f + '.creator') rescue nil
     File.unlink(f + '.author') rescue nil
+  end
+elsif command == 'consistent'
+  redis = Redis.new(path: 'redis.sock', db: 0)
+  redis.keys('*/instances').each do |instances|
+    engine = File.dirname(instances)
+    s_ready = s_running = s_stopped = 0
+    redis.lrange(instances,0,-1).each do |i|
+      prefix = File.join(engine,i.to_s)
+      url = redis.get(File.join(prefix,'instance-url'))
+      res = Typhoeus.get(url, :followlocation => true)
+      if res.success?
+        oldstate = redis.get(File.join(prefix,'state'))
+        case oldstate
+          when 'ready'
+            s_ready += 1
+          when 'running'
+            s_running += 1
+          when 'stopped'
+            s_stopped += 1
+        end
+      else
+        parent = redis.get(File.join(prefix,'parent'))
+        oldstate = redis.get(File.join(prefix,'state'))
+        children = redis.lrange(File.join(prefix,'children'),0,-1)
+        redis.multi do |multi|
+          multi.decr(File.join(engine,oldstate)) rescue nil
+          multi.incr(File.join(engine,'total_abandoned'))
+          multi.lrem(File.join(engine,'instances'),0,i.to_s)
+          multi.del(File.join(prefix,'instance-url'))
+          multi.del(File.join(prefix,'author'))
+          multi.del(File.join(prefix,'path'))
+          multi.del(File.join(prefix,'name'))
+          multi.del(File.join(prefix,'state'))
+          multi.del(File.join(prefix,'cpu'))
+          multi.del(File.join(prefix,'mem'))
+          multi.del(File.join(prefix,'time'))
+          children.each do |child|
+            if parent
+              multi.set(File.join(engine,child,'parent'),parent)
+            else
+              multi.del(File.join(engine,child,'parent'))
+            end
+          end
+          multi.del(File.join(prefix,'children'))
+          multi.del(File.join(prefix,'parent'))
+          if parent
+            multi.lrem(File.join(engine,parent,'children'),0,i.to_s)
+          end
+        end
+      end
+    end
+    redis.multi do |multi|
+      multi.set(File.join(engine,'ready'),s_ready.to_i)
+      multi.set(File.join(engine,'running'),s_running.to_i)
+      multi.set(File.join(engine,'stopped'),s_stopped.to_i)
+    end
   end
 elsif command == 'new'
   if !File.exists?(p1)
