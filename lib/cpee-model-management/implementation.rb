@@ -493,7 +493,7 @@ module CPEE
               nil
             end
           end
-        rescue
+        rescue => e
           retry
         end
 
