@@ -384,6 +384,9 @@ module CPEE
 
         name = @p[0].value
         source = @p[1] ? File.join(models,where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
+        p where
+        p name
+        p source
         fname = File.join(models,where,name + '.xml')
 
         attrs = JSON::load File.open(fname + '.attrs') rescue {}

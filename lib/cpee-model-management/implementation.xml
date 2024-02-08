@@ -82,8 +82,9 @@
     <get in="full" out="list"/>
     <get in="stages" out="list"/>
     <sse/>
-    <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.dir">
+    <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.dir" recursive="true">
       <post in="item"/>
+      <post in="dir"/>
       <post in="duplicate"/>
       <get in="stage" out="list"/>
       <delete/>
