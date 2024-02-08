@@ -272,7 +272,7 @@ module CPEE
         fnname = File.join(models,where,nname + '.xml')
         counter = 0
         stage = 'draft'
-        while File.exists?(fnname)
+        while File.exist?(fnname)
           counter += 1
           fnname = File.join(models,where,nname + counter.to_s + '.xml')
         end
@@ -309,7 +309,7 @@ module CPEE
         fname  = File.join(models,name + '.dir')
         fnname = File.join(models,nname + '.dir')
         counter = 0
-        while File.exists?(fnname)
+        while File.exist?(fnname)
           counter += 1
           fnname = File.join(models,nname + counter.to_s + '.dir')
         end
@@ -348,7 +348,7 @@ module CPEE
 
         fname = File.join(models,name + '.dir')
         counter = 0
-        while File.exists?(fname)
+        while File.exist?(fname)
           counter += 1
           fname = File.join(models,name + counter.to_s + '.dir')
         end
@@ -394,7 +394,7 @@ module CPEE
         stage = views[stage] if views && views[stage]
 
         counter = 0
-        while File.exists?(fname)
+        while File.exist?(fname)
           counter += 1
           fname = File.join(models,where,name + counter.to_s + '.xml')
         end
@@ -443,7 +443,7 @@ module CPEE
         models = @a[1]
         name   = File.basename(@r[-1],'.xml')
         fname = File.join(models,where,name + '.xml')
-        if File.exists? fname
+        if File.exist? fname
           Riddl::Parameter::Complex.new('content','application/xml',File.read(fname))
         else
           @status = 400
@@ -465,7 +465,7 @@ module CPEE
 
         inst = nil
         begin
-          inst = if File.exists?(fname + '.active') && File.exists?(fname + '.active-uuid') && !force
+          inst = if File.exist?(fname + '.active') && File.exist?(fname + '.active-uuid') && !force
             t = {
               'CPEE-INSTANCE-URL'  => File.read(fname + '.active'),
               'CPEE-INSTANCE-UUID' => File.read(fname + '.active-uuid')
@@ -572,7 +572,7 @@ module CPEE
 
         fname = File.join(models,where,name + '.xml')
 
-        if File.exists?(fname)
+        if File.exist?(fname)
           author = dn['GN'] + ' ' + dn['SN']
           attrs = {}
           XML::Smart.string(cont) do |doc|

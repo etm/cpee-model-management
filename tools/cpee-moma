@@ -80,7 +80,7 @@ p2      = ARGV[2]
 ui       = "#{curpath}/../ui/"
 
 if command == 'cpui'
-    if !File.exists?(p1)
+    if !File.exist?(p1)
       FileUtils.cp_r(ui,p1)
     else
       FileUtils.cp_r(Dir.glob(File.join(ui,'*')),p1,remove_destination: true)
@@ -178,8 +178,8 @@ elsif command == 'convert'
   end
   Dir['*.dir'].each do |f|
     attrs = JSON::load File.open(f + '.attrs') rescue {}
-    attrs['creator'] = File.read(f + '.creator') if File.exists?(f + '.creator')
-    attrs['author'] = File.read(f + '.author') if File.exists?(f + '.author')
+    attrs['creator'] = File.read(f + '.creator') if File.exist?(f + '.creator')
+    attrs['author'] = File.read(f + '.author') if File.exist?(f + '.author')
     File.write(f + '.attrs',JSON::pretty_generate(attrs))
 
     File.unlink(f + '.creator') rescue nil
@@ -241,12 +241,12 @@ elsif command == 'consistent'
     end
   end
 elsif command == 'new'
-  if !File.exists?(p1)
+  if !File.exist?(p1)
     FileUtils.mkdir(File.join(p1)) rescue nil
-    FileUtils.cp_r("#{curpath}/../server/moma",p1) unless File.exists?(File.join('p1','moma'))
-    FileUtils.cp_r("#{curpath}/../server/moma.conf",p1) unless File.exists?(File.join('p1','moma.conf'))
-    FileUtils.cp_r("#{curpath}/../server/testset.xml",p1) unless File.exists?(File.join('p1','testset.xml'))
-    FileUtils.cp_r("#{curpath}/../server/model.xml",p1) unless File.exists?(File.join('p1','model.xml'))
+    FileUtils.cp_r("#{curpath}/../server/moma",p1) unless File.exist?(File.join('p1','moma'))
+    FileUtils.cp_r("#{curpath}/../server/moma.conf",p1) unless File.exist?(File.join('p1','moma.conf'))
+    FileUtils.cp_r("#{curpath}/../server/testset.xml",p1) unless File.exist?(File.join('p1','testset.xml'))
+    FileUtils.cp_r("#{curpath}/../server/model.xml",p1) unless File.exist?(File.join('p1','model.xml'))
     FileUtils.mkdir(File.join(p1,'models')) rescue nil
   else
     puts 'Directory already exists.'
