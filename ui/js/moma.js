@@ -1,5 +1,6 @@
 var gstage;
 var gdir;
+var selections = [];
 
 function move_it(name,todir) {
   $.ajax({
@@ -82,11 +83,13 @@ function paint(pdir,gstage) {
       $(res).each(function(k,data) {
         if (data.type == 'dir') {
           var clone = document.importNode(document.querySelector('#folder').content,true);
+          $('[data-class=folder]',clone).attr('data-path',gdir + data['name'] + '/');
           $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
           $('[data-class=name]',clone).attr('data-full-name',data['name']);
           $('[data-class=name] a',clone).attr('href','javascript:paint("' + gdir + '/' + data['name'] + '","' + gstage + '")');
         } else {
           var clone = document.importNode(document.querySelector('#model').content,true);
+          $('[data-class=model]',clone).attr('data-path',gdir + data['name']);
           $('[data-class=name] a',clone).text(data['name']);
           $('[data-class=name]',clone).attr('data-full-name',data['name']);
           $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
@@ -157,7 +160,18 @@ $(document).ready(function() {
   });
 
   $('#models').on('click','[data-class=folder], [data-class=model]',(e) => {
-    $(e.currentTarget).toggleClass('selected');
+    const tar = $(e.currentTarget);
+    tar.toggleClass('selected');
+    if (tar.hasClass('selected')) {
+      selections.push(tar.attr('data-path'));
+    } else {
+      selections = selections.filter(item => item !== tar.attr('data-path'));
+    }
+    if (selections.length > 0) {
+      $('[data-class=special]').attr('class','');
+    } else {
+      $('[data-class=special]').attr('class','invisible');
+    }
   });
   $('#models').on('click','td[data-class=ops]',(e) => {
     var menu = {};
