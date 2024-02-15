@@ -53,9 +53,9 @@
     <link   rel="stylesheet"      href="/js_libs/relaxngui.css" type="text/css"/>
 
     <!-- custom stuff, play arround  -->
-    <link   rel="stylesheet"      href="css/design.css" type="text/css"/>
+    <link   rel="stylesheet"      href="css/moma.css" type="text/css"/>
     <link   rel="stylesheet"      href="css/stats.css" type="text/css"/>
-    <script type="text/javascript" src="js/design.js"></script>
+    <script type="text/javascript" src="js/moma.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
   </head>
   <body is="x-ui-">
@@ -73,10 +73,13 @@
       </ui-tabbar>
       <ui-content class="noselect">
         <ui-area data-belongs-to-tab="models">
-          <p>Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@cpee.org">helpdesk@cpee.org</a> if you are lost. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</p>
+          <div class="fixed">
+            <div class="text">Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@cpee.org">helpdesk@cpee.org</a> if you are lost. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</div>
+            <div class="breadcrumb"><span class="crumb" onclick="">⌂ Home</span></div>
+          </div>
           <table id="models" class='ui-table'>
             <thead>
-              <th></th>
+              <th data-class='specialinvisible'>📁</th>
               <th>Name</th>
               <th><abbr title='force new instance'>F</abbr></th>
               <th><abbr title='link to model source'>M</abbr></th>
@@ -86,19 +89,6 @@
               <th>Changed At</th>
               <th><abbr title='Operations'>Op</abbr></th>
             </thead>
-            <template id="up">
-              <tr>
-                <td data-class='folder' class="noselect">📁</td>
-                <td data-class='name' data-full-name=''><a href=''></a></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td data-class='date'></td>
-                <td data-class=''></td>
-              </tr>
-            </template>
             <template id="folder">
               <tr>
                 <td data-class='folder' class="noselect">📁</td>
@@ -130,18 +120,17 @@
           </table>
         </ui-area>
         <ui-area data-belongs-to-tab="newmodel" class="inactive">
-          <p>
+          <div class="text">
             Create an empty model. Beware, if a model of the same name already
             exists in one of the categories (e.g. draft, development,
             production, archive) it can not be created. To protect you from
             getting confused and shooting yourself in the foot in your little
             modelling world we allow only unique names. Better safe than sorry.
-          </p>
+          </div>
+          <div class="breadcrumb"><span class="crumb" onclick="">⌂ Home</span></div>
           <form id="newmod">
-            <input type="hidden" name="stage" value=""/>
-            <input type="hidden" name="dir" value=""/>
             <p>
-              <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
+              <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
             </p>
             <p>
               <button>New Model</button>
@@ -149,17 +138,14 @@
           </form>
         </ui-area>
         <ui-area data-belongs-to-tab="newdir" class="inactive">
-          <p>
+          <div class="text">
             Create an empty directory. Beware, if a directory of the same name
-            already exists in one of the categories (e.g. draft, development,
-            production, archive) it can not be created. To protect you from
-            getting confused and shooting yourself in the foot in your little
-            modelling world we allow only unique names. Better safe than sorry.
-          </p>
+            already exists it can not be created.
+          </div>
+          <div class="breadcrumb"><span class="crumb" onclick="">⌂ Home</span></div>
           <form id="newdir">
-            <input type="hidden" name="stage" value=""/>
             <p>
-              <input type="text" name="newdir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
+              <input type="text" name="newdir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
             </p>
             <p>
               <button>New Directory</button>

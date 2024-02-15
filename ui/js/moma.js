@@ -44,7 +44,7 @@ function delete_it(name) {
   }
 }
 
-function design_init(gdir,gstage) {
+function moma_init() {
   var es = new EventSource('server/');
   es.onopen = function() {
     console.log('design open');
@@ -58,14 +58,22 @@ function design_init(gdir,gstage) {
   };
 }
 
-function paint(gdir,gstage) {
+function paint(pdir,gstage) {
+  gdir = (pdir + '/').replaceAll(/\/+/g,'/');
+
   $('#models tbody').empty();
-  if (gdir && gdir != '') {
-    var clone = document.importNode(document.querySelector('#up').content,true);
-    $('[data-class=name] a',clone).text('..');
-    $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=');
-    $('#models tbody').append(clone);
-  }
+  $('div.breadcrumb .added').remove();
+
+  history.pushState({}, document.title, window.location.pathname + '?stage=' + gstage + '&dir=' + gdir);
+  $('div.breadcrumb span.crumb').attr('onclick','paint("","' + gstage + '")');
+
+  let adddir = '';
+  let node;
+  gdir.split('/').filter((ele) => ele != '').forEach((ele,i) => {
+    adddir += ele + '/';
+    node = $('div.breadcrumb').append('<span class="separator added">/</span><span class="crumb added" onclick="paint(\'' + adddir + '\',\'' + gstage + '\')">' + ele.replace('.dir','') + '</span>');
+  });
+
   $.ajax({
     type: "GET",
     url: "server/" + gdir,
@@ -76,7 +84,7 @@ function paint(gdir,gstage) {
           var clone = document.importNode(document.querySelector('#folder').content,true);
           $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
           $('[data-class=name]',clone).attr('data-full-name',data['name']);
-          $('[data-class=name] a',clone).attr('href',window.location.pathname + '?stage=' + gstage + '&dir=' + data['name']);
+          $('[data-class=name] a',clone).attr('href','javascript:paint("' + gdir + '/' + data['name'] + '","' + gstage + '")');
         } else {
           var clone = document.importNode(document.querySelector('#model').content,true);
           $('[data-class=name] a',clone).text(data['name']);
@@ -112,9 +120,9 @@ $(document).ready(function() {
   const urlParams = new URLSearchParams(queryString);
 
   gstage = urlParams.get('stage') || 'draft';
-  gdir = urlParams.get('dir') ? (urlParams.get('dir') + '/').replace(/\/+/,'/') : '';
+  gdir = urlParams.get('dir') ? (urlParams.get('dir') + '/').replaceAll(/\/+/g,'/') : '';
 
-  design_init(gdir,gstage);
+  moma_init();
 
   var shifts = []
   $.ajax({
@@ -127,8 +135,6 @@ $(document).ready(function() {
     }
   });
 
-  $('input[name=stage]').val(gstage);
-  $('input[name=dir]').val(gdir);
   $('ui-behind span').text(gstage);
   $('ui-behind span').click((e) => {
     if (shifts.length > 0) {
@@ -216,7 +222,6 @@ $(document).ready(function() {
     new CustomMenu(e).contextmenu(menu);
   });
 
-  history.pushState({}, document.title, window.location.pathname + '?stage=' + gstage + '&dir=' + gdir);
   paint(gdir,gstage);
 
   $('#newmod').on('submit',(e) => {
@@ -234,7 +239,7 @@ $(document).ready(function() {
   $('#newdir').on('submit',(e) => {
     $.ajax({
       type: "POST",
-      url: "server/",
+      url: "server/" + gdir,
       data: { dir: $("#newdir input[name=newdir]").val() },
       success: (r) => {
         uidash_activate_tab($('ui-tab').first());

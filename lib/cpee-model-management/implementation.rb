@@ -180,7 +180,7 @@ module CPEE
 
     class GetList < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
+        where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         views = @a[1]
         models = @a[2]
         stage = [@p[0]&.value] || ['draft']
@@ -226,7 +226,7 @@ module CPEE
 
     class ShiftItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+        where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         themes = @a[2]
         models = @a[3]
@@ -263,7 +263,7 @@ module CPEE
 
     class RenameItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+        where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
         name  = File.basename(@r.last,'.xml')
@@ -302,10 +302,11 @@ module CPEE
     end #}}}
     class RenameDir < Riddl::Implementation #{{{
       def response
+        where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[0]
         models = @a[1]
-        name  = File.basename(@r.last,'.dir')
-        nname = @p[0].value
+        name  = File.join(where,File.basename(@r.last,'.dir'))
+        nname = File.join(where,@p[0].value)
         fname  = File.join(models,name + '.dir')
         fnname = File.join(models,nname + '.dir')
         counter = 0
@@ -342,15 +343,16 @@ module CPEE
 
     class CreateDir < Riddl::Implementation #{{{
       def response
+        where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         name = @p[0].value
-        conns = @a[0]
-        models = @a[1]
+        conns = @a[1]
+        models = @a[2]
 
-        fname = File.join(models,name + '.dir')
+        fname = File.join(models,where,name + '.dir')
         counter = 0
         while File.exist?(fname)
           counter += 1
-          fname = File.join(models,name + counter.to_s + '.dir')
+          fname = File.join(models,where,name + counter.to_s + '.dir')
         end
 
         dn = CPEE::ModelManagement::get_dn @h['DN']
@@ -371,7 +373,7 @@ module CPEE
     end #}}}
     class Create < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r.last)
+        where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         stage = if @a[1] == :cre
           @p.shift.value
         else
@@ -384,9 +386,6 @@ module CPEE
 
         name = @p[0].value
         source = @p[1] ? File.join(models,where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
-        p where
-        p name
-        p source
         fname = File.join(models,where,name + '.xml')
 
         attrs = JSON::load File.open(fname + '.attrs') rescue {}
@@ -439,7 +438,7 @@ module CPEE
 
     class GetItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+        where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         models = @a[1]
         name   = File.basename(@r[-1],'.xml')
         fname = File.join(models,where,name + '.xml')
@@ -452,7 +451,7 @@ module CPEE
     end #}}}
     class OpenItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-3])
+        where = @a[0] == :main ? '' : @r[0..-3].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         name   = File.basename(@r[-2],'.xml')
         insta  = @a[1]
         cock   = @a[2]
@@ -533,7 +532,7 @@ module CPEE
 
     class MoveItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+        where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
 
@@ -602,7 +601,7 @@ module CPEE
     end #}}}
     class DeleteItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+        where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
         name  = File.basename(@r.last,'.xml')
@@ -617,15 +616,16 @@ module CPEE
     end #}}}
     class DeleteDir < Riddl::Implementation #{{{
       def response
+        where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[0]
         models = @a[1]
         name  = File.basename(@r.last,'.dir')
-        fname = File.join(models,name + '.dir')
+        fname = File.join(models,where,name + '.dir')
 
         dn     = CPEE::ModelManagement::get_dn @h['DN']
         author = dn['GN'] + ' ' + dn['SN']
 
-        CPEE::ModelManagement::op author, 'rm', models, File.join(name + '.dir')
+        CPEE::ModelManagement::op author, 'rm', models, File.join(where,name + '.dir')
         CPEE::ModelManagement::notify conns, 'delete', models, fname
       end
     end #}}}
@@ -869,7 +869,7 @@ module CPEE
           run GetStages, opts[:themes] if get 'stages'
           run Create, :main, :cre, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
           run Create, :main, :dup, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'duplicate'
-          run CreateDir, opts[:management_receivers], opts[:models] if post 'dir'
+          run CreateDir, :main, opts[:management_receivers], opts[:models] if post 'dir'
           run ManagementSend, opts[:management_receivers] if sse
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
             run GetList, :sub, opts[:views], opts[:models] if get 'stage'
@@ -877,6 +877,7 @@ module CPEE
             run Create, :sub, :dup, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'duplicate'
             run DeleteDir, opts[:management_receivers], opts[:models] if delete
             run RenameDir, opts[:management_receivers], opts[:models] if put 'name'
+            run CreateDir, :sub, opts[:management_receivers], opts[:models] if post 'dir'
             on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
               run DeleteItem, :sub, opts[:management_receivers], opts[:models] if delete
               run GetItem, :sub, opts[:models] if get
