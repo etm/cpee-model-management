@@ -2,7 +2,50 @@ var gstage;
 var gdir;
 var selections = [];
 
+function copy_all() {
+  console.log(gdir);
+  console.log(selections);
+
+}
+function move_all() {
+  selections.forEach((name) => {
+    $.ajax({
+      type: "PUT",
+      url: "server/" + name,
+      data: { dir: gdir }
+    });
+  });
+  unmark_all();
+}
+function delete_all() {
+  if (confirm('Are you really, really, REALLY sure!')) {
+    selections.forEach((name) => {
+      $.ajax({
+        type: "DELETE",
+        url: "server/" + name
+      });
+    });
+    unmark_all();
+  }
+}
+function unmark_all() {
+  selections = [];
+  $('[data-class=special]').attr('class','invisible');
+}
+function shift_all(to) {
+  selections.forEach((name) => {
+    $.ajax({
+      type: "PUT",
+      url: "server/" + name,
+      data: { stage: to }
+    });
+  });
+  unmark_all();
+}
+
 function move_it(name,todir) {
+  console.log(name);
+  console.log(todir);
   $.ajax({
     type: "PUT",
     url: "server/" + gdir + name,
@@ -177,6 +220,56 @@ $(document).ready(function() {
       $('[data-class=special]').attr('class','invisible');
     }
   });
+  $('#models').on('click','th[data-class=special]',(e) => {
+    var menu = {};
+    var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');
+    menu['Operations'] = [
+      {
+        'label': 'Move all marked entries to the current directory',
+        'function_call': move_all,
+        'text_icon': '⨀',
+        'type': undefined,
+        'params': []
+      },
+      {
+        'label': 'Copy all marked entries to the current directory',
+        'function_call': copy_all,
+        'text_icon': '⨁',
+        'type': undefined,
+        'params': []
+      },
+      {
+        'label': 'Delete all marked entries',
+        'function_call': delete_all,
+        'text_icon': '❌',
+        'type': undefined,
+        'params': []
+      },
+      {
+        'label': 'Unmarked all marked entries',
+        'function_call': unmark_all,
+        'type': undefined,
+        'text_icon': '🟥',
+        'params': []
+      }
+    ];
+    if (shifts.length > 0) {
+      menu['Shifting'] = [];
+      shifts.forEach(ele => {
+        menu['Shifting'].push(
+          {
+            'label': 'Shift all marked entries to ' + ele,
+            'function_call': shift_all,
+            'text_icon': '➔',
+            'type': undefined,
+            'params': [ele]
+          }
+        );
+      });
+    }
+    new CustomMenu(e).contextmenu(menu);
+  });
+
   $('#models').on('click','td[data-class=ops]',(e) => {
     var menu = {};
     var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');

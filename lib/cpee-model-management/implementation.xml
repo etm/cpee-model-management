@@ -34,7 +34,7 @@
   </message>
   <message name="dirname">
     <parameter name="dir" type="string">
-      <param name="pattern">([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir|</param>
+      <param name="pattern">(([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir(\/([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir)*)(\/?)|</param>
     </parameter>
   </message>
   <message name="duplicate">
