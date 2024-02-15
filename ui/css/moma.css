@@ -1,14 +1,19 @@
-td {
-  padding-right: 1em;
+:root {
+  --x-ui-selection-background-light: #ef29297f;
+  --x-ui-selection-background: #ef2929;
 }
 
-[data-class=model] { font-size: 1.7em; }
-[data-class=folder] { font-size: 1.7em; }
+[data-class=model] { font-size: 1.7em; cursor: pointer; }
+[data-class=folder] { font-size: 1.7em; cursor: pointer; }
+[data-class=model]:hover { background-color: var(--x-ui-selection-background-light) !important; }
+[data-class=folder]:hover { background-color: var(--x-ui-selection-background-light) !important; }
 [data-class=ops] { cursor: pointer; }
 [data-class=invisible] { visibility: hidden; }
 [data-class=specialinvisible] { font-size: 1.7em; visibility: hidden; }
 
-td[draggable] { cursor: move; }
+td.selected {
+  background-color: var(--x-ui-selection-background) !important;
+}
 
 div.fixed {
   position: sticky;

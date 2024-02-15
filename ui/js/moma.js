@@ -156,24 +156,8 @@ $(document).ready(function() {
     }
   });
 
-  var dragged;
-  $('#models').on('drag','td[data-class=model]',false);
-  $('#models').on('dragstart','td[data-class=model]',(e) => {
-    dragged = $(e.currentTarget).parents('tr').find('td[data-class=name]').text();
-  });
-  $('#models').on('dragover','td[data-class=folder]',false);
-  $('#models').on('drop','td[data-class=folder]',(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dragged) {
-      var todir = $(e.currentTarget).parents('tr').find('td[data-class=name]').text();
-      todir = todir.replace(/\./g,'');
-      if (todir != '') {
-        todir += '.dir';
-      }
-      move_it(dragged,todir);
-      dragged = undefined;
-    }
+  $('#models').on('click','[data-class=folder], [data-class=model]',(e) => {
+    $(e.currentTarget).toggleClass('selected');
   });
   $('#models').on('click','td[data-class=ops]',(e) => {
     var menu = {};
