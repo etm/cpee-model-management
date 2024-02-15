@@ -82,14 +82,18 @@ function paint(pdir,gstage) {
     success: function(res) {
       $(res).each(function(k,data) {
         if (data.type == 'dir') {
+          let dp = gdir + data['name'] + '/';
           var clone = document.importNode(document.querySelector('#folder').content,true);
-          $('[data-class=folder]',clone).attr('data-path',gdir + data['name'] + '/');
+          $('[data-class=folder]',clone).attr('data-path',dp);
+          if (selections.includes(dp)) { $('[data-class=folder]',clone).toggleClass('selected'); }
           $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
           $('[data-class=name]',clone).attr('data-full-name',data['name']);
           $('[data-class=name] a',clone).attr('href','javascript:paint("' + gdir + '/' + data['name'] + '","' + gstage + '")');
         } else {
+          let dp = gdir + data['name'];
           var clone = document.importNode(document.querySelector('#model').content,true);
-          $('[data-class=model]',clone).attr('data-path',gdir + data['name']);
+          $('[data-class=model]',clone).attr('data-path',dp);
+          if (selections.includes(dp)) { $('[data-class=model]',clone).toggleClass('selected'); }
           $('[data-class=name] a',clone).text(data['name']);
           $('[data-class=name]',clone).attr('data-full-name',data['name']);
           $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
