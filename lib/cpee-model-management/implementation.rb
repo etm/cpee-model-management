@@ -570,7 +570,7 @@ module CPEE
     end #}}}
     class PutItem < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : Riddl::Protocols::Utils::unescape(@r[-2])
+        where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
         name  = File.basename(@r.last,'.xml')
@@ -578,6 +578,8 @@ module CPEE
         dn = CPEE::ModelManagement::get_dn @h['DN']
 
         fname = File.join(models,where,name + '.xml')
+
+        p fname
 
         if File.exist?(fname)
           author = dn['GN'] + ' ' + dn['SN']

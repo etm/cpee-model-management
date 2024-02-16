@@ -1,4 +1,4 @@
-var gstage;
+let gstage;
 var gdir;
 var selections = [];
 var updating = false;
@@ -116,14 +116,17 @@ function possibly_paint() {
   }
 }
 
-function paint(pdir,gstage) {
+function paint(pdir,gstage,statesave=true) {
   if (updating == true) { updating_counter += 1; return };
   updating = true;
   gdir = (pdir + '/').replaceAll(/\/+/g,'/').replace(/^\/*/,'');
 
   $('div.breadcrumb .added').remove();
 
-  history.pushState({}, document.title, window.location.pathname + '?stage=' + gstage + '&dir=' + gdir);
+  document.title = $('html head title').attr('data-orig') + (gdir == '' ? '' :  ' - ' + gdir.replace(/\.dir|\.xml/g,''));
+  if (statesave) {
+    history.pushState({gstage: gstage, gdir: gdir}, '', window.location.pathname + '?stage=' + gstage + '&dir=' + gdir);
+  }
   $('div.breadcrumb span.crumb').attr('onclick','paint("","' + gstage + '")');
 
   let adddir = '';
@@ -207,6 +210,11 @@ $(document).ready(function() {
       shifts = shifts.filter(item => item !== gstage);
     }
   });
+
+  window.onpopstate = function(e){
+    let d = e.state || { gstage: 'draft', 'gdir': '' };
+    paint(d.gdir,d.gstage,false);
+  };
 
   $('ui-behind span').text(gstage);
   $('ui-behind span').click((e) => {
@@ -296,6 +304,7 @@ $(document).ready(function() {
   $('#models').on('click','td[data-class=ops]',(e) => {
     var menu = {};
     var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');
+    var is_model = $(e.currentTarget).parents('tr').find('td[data-class=model]').length > 0 ? true : false;
     menu['Operations'] = [
       {
         'label': 'Delete',
@@ -323,7 +332,7 @@ $(document).ready(function() {
         }
       );
     }
-    if (shifts.length > 0) {
+    if (shifts.length > 0 && is_model) {
       menu['Shifting'] = [];
       shifts.forEach(ele => {
         menu['Shifting'].push(
