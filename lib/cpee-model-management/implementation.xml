@@ -32,17 +32,14 @@
       <param name="pattern">([a-zA-Z0-9öäüÖÄÜ _-]+)|</param>
     </parameter>
   </message>
-  <message name="dirname">
-    <parameter name="dir" type="string">
+  <message name="movedir">
+    <parameter name="movedir" type="string">
       <param name="pattern">(([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir(\/([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir)*)(\/?)|</param>
     </parameter>
   </message>
-  <message name="duplicate">
-    <parameter name="new" type="string">
-      <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
-    </parameter>
-    <parameter name="old" type="string">
-      <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+\.xml</param>
+  <message name="dupdir">
+    <parameter name="dupdir" type="string">
+      <param name="pattern">(([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir(\/([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir)*)(\/?)|</param>
     </parameter>
   </message>
   <message name="stages">
@@ -77,15 +74,15 @@
   <resource>
     <post in="item"/>
     <post in="dir"/>
-    <post in="duplicate"/>
     <get in="stage" out="list"/>
     <get in="full" out="list"/>
     <get in="stages" out="list"/>
-    <sse/>
+    <resource relative="management">
+      <sse/>
+    </resource>
     <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.dir" recursive="true">
       <post in="item"/>
       <post in="dir"/>
-      <post in="duplicate"/>
       <get in="stage" out="list"/>
       <delete/>
       <put in="name"/> <!-- rename -->
@@ -94,8 +91,9 @@
         <delete/>
         <put in="content"/>
         <put in="name"/> <!-- rename -->
-        <put in="dirname"/> <!-- move -->
+        <put in="movedir"/> <!-- move -->
         <put in="newstage"/> <!-- shift -->
+        <put in="dupdir"/> <!-- duplicate -->
         <resource relative="open"><get in="stage"/></resource>
         <resource relative="open-new"><get in="stage"/></resource>
       </resource>
@@ -105,7 +103,8 @@
       <delete/>
       <put in="content"/>
       <put in="name"/> <!-- rename -->
-      <put in="dirname"/> <!-- move -->
+      <put in="movedir"/> <!-- move -->
+      <put in="dupdir"/> <!-- duplicate -->
       <put in="newstage"/> <!-- shift -->
       <resource relative="open"><get in="stage"/></resource>
       <resource relative="open-new"><get in="stage"/></resource>

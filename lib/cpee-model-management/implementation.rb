@@ -26,6 +26,7 @@ require 'pathname'
 require 'shellwords'
 require 'securerandom'
 require 'cpee/redis'
+require 'digest/sha1'
 
 module CPEE
   module ModelManagement
@@ -195,7 +196,10 @@ module CPEE
           { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['guarded'], :guarded_id => attrs['guarded_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
-        Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
+        ret = JSON::pretty_generate(names)
+        @headers << Riddl::Header.new('CPEE-MOMA-FINGERPRINT', Digest::SHA1.hexdigest(ret))
+
+        Riddl::Parameter::Complex.new('list','application/json',ret)
       end
     end #}}}
     class GetListFull < Riddl::Implementation #{{{
@@ -373,19 +377,23 @@ module CPEE
     end #}}}
     class Create < Riddl::Implementation #{{{
       def response
-        where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
-        stage = if @a[1] == :cre
-          @p.shift.value
+        models = @a[4]
+        views = @a[1]
+        conns = @a[2]
+        templates = @a[3]
+        if  @p.first.name == 'stage'
+          where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
+          stage = @p.shift.value
+          name = @p[0].value
+          source = templates[stage] ? templates[stage] : 'testset.xml'
         else
-          nil
+          where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
+          stage = nil
+          name = @r[-1].sub(/\.xml$/,'')
+          source = File.join(models,where,name + '.xml')
+          where = @p[0].value
         end
-        views = @a[2]
-        conns = @a[3]
-        templates = @a[4]
-        models = @a[5]
 
-        name = @p[0].value
-        source = @p[1] ? File.join(models,where,@p[1].value) : (templates[stage] ? templates[stage] : 'testset.xml')
         fname = File.join(models,where,name + '.xml')
 
         attrs = JSON::load File.open(fname + '.attrs') rescue {}
@@ -859,22 +867,37 @@ module CPEE
 
       CPEE::redis_connect opts, 'Server Main'
 
+      opts[:sse_keepalive_frequency]    ||= 10
+
       Proc.new do
+
+        parallel do
+          EM.add_periodic_timer(opts[:sse_keepalive_frequency]) do
+            opts[:management_receivers].each do |sse|
+              sse.send_with_id('heartbeat', '42') unless sse&.closed?
+            end
+            opts[:stat_receivers].each do |sse|
+              sse.send_with_id('heartbeat', '42') unless sse&.closed?
+            end
+          end
+        end
+
         interface 'events' do
           run StatReceive, opts[:redis], opts[:stat_receivers] if post 'event'
         end
+
         interface 'implementation' do
           run GetList, :main, opts[:views], opts[:models] if get 'stage'
           run GetListFull, opts[:views], opts[:models] if get 'full'
           run GetStages, opts[:themes] if get 'stages'
-          run Create, :main, :cre, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
-          run Create, :main, :dup, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'duplicate'
+          run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
           run CreateDir, :main, opts[:management_receivers], opts[:models] if post 'dir'
-          run ManagementSend, opts[:management_receivers] if sse
+          on resource 'management' do
+            run ManagementSend, opts[:management_receivers] if sse
+          end
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
             run GetList, :sub, opts[:views], opts[:models] if get 'stage'
-            run Create, :sub, :cre, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
-            run Create, :sub, :dup, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'duplicate'
+            run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
             run DeleteDir, opts[:management_receivers], opts[:models] if delete
             run RenameDir, opts[:management_receivers], opts[:models] if put 'name'
             run CreateDir, :sub, opts[:management_receivers], opts[:models] if post 'dir'
@@ -883,7 +906,8 @@ module CPEE
               run GetItem, :sub, opts[:models] if get
               run PutItem, :sub, opts[:management_receivers], opts[:models] if put 'content'
               run RenameItem, :sub, opts[:management_receivers], opts[:models] if put 'name'
-              run MoveItem, :sub, opts[:management_receivers], opts[:models] if put 'dirname'
+              run MoveItem, :sub, opts[:management_receivers], opts[:models] if put 'movedir'
+              run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if put 'dupdir'
               run ShiftItem, :sub, opts[:management_receivers], opts[:themes], opts[:models] if put 'newstage'
               on resource 'open' do
                 run OpenItem, :sub, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models] if get 'stage'
@@ -898,7 +922,8 @@ module CPEE
             run GetItem, :main, opts[:models] if get
             run PutItem, :main, opts[:management_receivers], opts[:models] if put 'content'
             run RenameItem, :main, opts[:management_receivers], opts[:models] if put 'name'
-            run MoveItem, :main, opts[:management_receivers], opts[:models] if put 'dirname'
+            run MoveItem, :main, opts[:management_receivers], opts[:models] if put 'movedir'
+            run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if put 'dupdir'
             run ShiftItem, :main, opts[:management_receivers], opts[:themes], opts[:models] if put 'newstage'
             on resource 'open' do
               run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models] if get 'stage'

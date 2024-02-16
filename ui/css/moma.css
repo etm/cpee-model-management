@@ -4,9 +4,8 @@
 }
 
 [data-class=model] { min-width: 1.5em; text-align: center; font-size: 1.7em; cursor: pointer; }
-[data-class=folder] { min-width: 1.5em; text-align: center; font-size: 1.7em; cursor: pointer; }
+[data-class=folder] { min-width: 1.5em; text-align: center; font-size: 1.7em; }
 [data-class=model]:hover { background-color: var(--x-ui-selection-background-light) !important; }
-[data-class=folder]:hover { background-color: var(--x-ui-selection-background-light) !important; }
 [data-class=ops] { cursor: pointer; }
 [data-class=special] { cursor: pointer; min-width: 1.5em; text-align: center !important; font-size: 1.7em; }
 [data-class=special].invisible { cursor: auto; visibility: hidden; }

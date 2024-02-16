@@ -1,18 +1,26 @@
 var gstage;
 var gdir;
 var selections = [];
+var updating = false;
+var updating_counter = 0;
+var fingerprint = "";
 
 function copy_all() {
-  console.log(gdir);
-  console.log(selections);
-
+  selections.forEach((name) => {
+    $.ajax({
+      type: "PUT",
+      url: "server/" + name,
+      data: { dupdir: gdir }
+    });
+  });
+  unmark_all();
 }
 function move_all() {
   selections.forEach((name) => {
     $.ajax({
       type: "PUT",
       url: "server/" + name,
-      data: { dir: gdir }
+      data: { movedir: gdir }
     });
   });
   unmark_all();
@@ -31,6 +39,7 @@ function delete_all() {
 function unmark_all() {
   selections = [];
   $('[data-class=special]').attr('class','invisible');
+  $('td.selected').removeClass('selected');
 }
 function shift_all(to) {
   selections.forEach((name) => {
@@ -44,12 +53,10 @@ function shift_all(to) {
 }
 
 function move_it(name,todir) {
-  console.log(name);
-  console.log(todir);
   $.ajax({
     type: "PUT",
     url: "server/" + gdir + name,
-    data: { dir: todir }
+    data: { movedir: todir }
   });
 }
 function shift_it(name,to) {
@@ -73,9 +80,9 @@ function duplicate_it(name) {
   var newname;
   if (newname = prompt('New name please!',name.replace(/\.xml$/,'').replace(/\.dir$/,''))) {
     $.ajax({
-      type: "POST",
-      url: "server/" + gdir,
-      data: { new: newname, old: name }
+      type: "PUT",
+      url: "server/" + gdir + name,
+      data: { dupdir: gdir }
     });
   }
 }
@@ -89,7 +96,7 @@ function delete_it(name) {
 }
 
 function moma_init() {
-  var es = new EventSource('server/');
+  var es = new EventSource('server/management/');
   es.onopen = function() {
     console.log('design open');
   };
@@ -98,14 +105,21 @@ function moma_init() {
   };
   es.onerror = function() {
     console.log('design error');
-    // design_init();
   };
 }
 
+function possibly_paint() {
+  if (updating_counter > 0 && updating != true) {
+    updating_counter = 0;
+    paint(gdir,gstage);
+  }
+}
+
 function paint(pdir,gstage) {
+  if (updating == true) { updating_counter += 1; return };
+  updating = true;
   gdir = (pdir + '/').replaceAll(/\/+/g,'/');
 
-  $('#models tbody').empty();
   $('div.breadcrumb .added').remove();
 
   history.pushState({}, document.title, window.location.pathname + '?stage=' + gstage + '&dir=' + gdir);
@@ -122,41 +136,49 @@ function paint(pdir,gstage) {
     type: "GET",
     url: "server/" + gdir,
     data: { stage: gstage },
-    success: function(res) {
-      $(res).each(function(k,data) {
-        if (data.type == 'dir') {
-          let dp = gdir + data['name'] + '/';
-          var clone = document.importNode(document.querySelector('#folder').content,true);
-          $('[data-class=folder]',clone).attr('data-path',dp);
-          if (selections.includes(dp)) { $('[data-class=folder]',clone).toggleClass('selected'); }
-          $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
-          $('[data-class=name]',clone).attr('data-full-name',data['name']);
-          $('[data-class=name] a',clone).attr('href','javascript:paint("' + gdir + '/' + data['name'] + '","' + gstage + '")');
-        } else {
-          let dp = gdir + data['name'];
-          var clone = document.importNode(document.querySelector('#model').content,true);
-          $('[data-class=model]',clone).attr('data-path',dp);
-          if (selections.includes(dp)) { $('[data-class=model]',clone).toggleClass('selected'); }
-          $('[data-class=name] a',clone).text(data['name']);
-          $('[data-class=name]',clone).attr('data-full-name',data['name']);
-          $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
-          $('[data-class=force] a',clone).attr('href','server/' + gdir + data['name'] + '/open-new?stage=' + gstage);
-          $('[data-class=raw] a',clone).attr('href','server/' + gdir + data['name']);
+    success: function(res,status,request) {
+      let fp = request.getResponseHeader('cpee-moma-fingerprint');
+      if (fp != fingerprint) {
+        $('#models tbody').empty();
+        fingerprint = fp;
+        let tempcont = $();
+        $(res).each(function(k,data) {
+          if (data.type == 'dir') {
+            let dp = gdir + data['name'] + '/';
+            var clone = document.importNode(document.querySelector('#folder').content,true);
+            $('[data-class=folder]',clone).attr('data-path',dp);
+            if (selections.includes(dp)) { $('[data-class=folder]',clone).toggleClass('selected'); }
+            $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,''));
+            $('[data-class=name]',clone).attr('data-full-name',data['name']);
+            $('[data-class=name] a',clone).attr('href','javascript:paint("' + gdir + '/' + data['name'] + '","' + gstage + '")');
+          } else {
+            let dp = gdir + data['name'];
+            var clone = document.importNode(document.querySelector('#model').content,true);
+            $('[data-class=model]',clone).attr('data-path',dp);
+            if (selections.includes(dp)) { $('[data-class=model]',clone).toggleClass('selected'); }
+            $('[data-class=name] a',clone).text(data['name']);
+            $('[data-class=name]',clone).attr('data-full-name',data['name']);
+            $('[data-class=name] a',clone).attr('href','server/' + gdir + data['name'] + '/open?stage=' + gstage);
+            $('[data-class=force] a',clone).attr('href','server/' + gdir + data['name'] + '/open-new?stage=' + gstage);
+            $('[data-class=raw] a',clone).attr('href','server/' + gdir + data['name']);
 
-          $('[data-class=guarded] abbr',clone).attr('title',data['guarded'] || '');
-          $('[data-class=guarded] abbr',clone).text((data['guarded'] || '').match(/none/i) ? '' : (data['guarded'] || '').charAt(0).toUpperCase());
-          $('[data-class=resource]',clone).text(data['guarded_id'] || '');
+            $('[data-class=guarded] abbr',clone).attr('title',data['guarded'] || '');
+            $('[data-class=guarded] abbr',clone).text((data['guarded'] || '').match(/none/i) ? '' : (data['guarded'] || '').charAt(0).toUpperCase());
+            $('[data-class=resource]',clone).text(data['guarded_id'] || '');
 
-          if (data['guarded']) {
-            $('[data-class=guarded] abbr',clone).attr('title',data['guarded']);
-            $('[data-class=guarded] abbr',clone).text(data['guarded'].match(/none/i) ? '' : data['guarded'].charAt(0).toUpperCase());
-            $('[data-class=resource]',clone).text(data['guarded_what']);
+            if (data['guarded']) {
+              $('[data-class=guarded] abbr',clone).attr('title',data['guarded']);
+              $('[data-class=guarded] abbr',clone).text(data['guarded'].match(/none/i) ? '' : data['guarded'].charAt(0).toUpperCase());
+              $('[data-class=resource]',clone).text(data['guarded_what']);
+            }
           }
-        }
-        $('[data-class=author]',clone).text(data['author']);
-        $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
-        $('#models tbody').append(clone);
-      });
+          $('[data-class=author]',clone).text(data['author']);
+          $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
+          tempcont.push(clone);
+        });
+        $('#models tbody').append(tempcont);
+      }
+      updating = false;
     }
   });
 }
@@ -206,7 +228,7 @@ $(document).ready(function() {
     }
   });
 
-  $('#models').on('click','[data-class=folder], [data-class=model]',(e) => {
+  $('#models').on('click','[data-class=model]',(e) => {
     const tar = $(e.currentTarget);
     tar.toggleClass('selected');
     if (tar.hasClass('selected')) {
@@ -342,4 +364,6 @@ $(document).ready(function() {
     });
     return false;
   });
+
+  setInterval(possibly_paint,1000);
 });
