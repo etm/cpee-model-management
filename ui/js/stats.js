@@ -211,6 +211,7 @@ function stats_init() {
   };
   es.onerror = function() {
     console.log('stats error');
+    setTimeout(function(){ if (es.readyState == 2) { stats_init() } }, 5000);
   }
 }
 

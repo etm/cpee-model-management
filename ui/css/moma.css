@@ -12,6 +12,8 @@
 [data-class=special]:hover { background-color: var(--x-ui-selection-background-light) !important; }
 
 [data-class=special] {
+  position: relative;
+  z-index: 0;
   animation: important 0.2s infinite;
 }
 @keyframes important {
@@ -40,6 +42,7 @@ td.selected {
 
 div.fixed {
   position: sticky;
+  z-index: 1;
   top: 0;
   width: 100%;
   background-color: var(--x-ui-background-color);

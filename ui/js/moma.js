@@ -105,6 +105,7 @@ function moma_init() {
   };
   es.onerror = function() {
     console.log('design error');
+    setTimeout(function(){ if (es.readyState == 2) { moma_init() } }, 5000);
   };
 }
 
@@ -118,7 +119,7 @@ function possibly_paint() {
 function paint(pdir,gstage) {
   if (updating == true) { updating_counter += 1; return };
   updating = true;
-  gdir = (pdir + '/').replaceAll(/\/+/g,'/');
+  gdir = (pdir + '/').replaceAll(/\/+/g,'/').replace(/^\/*/,'');
 
   $('div.breadcrumb .added').remove();
 
