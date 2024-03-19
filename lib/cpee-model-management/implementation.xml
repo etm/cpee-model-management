@@ -41,6 +41,11 @@
     <parameter name="dupdir" type="string">
       <param name="pattern">(([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir(\/([a-zA-Z0-9öäüÖÄÜ _-]+)\.dir)*)(\/?)|</param>
     </parameter>
+    <optional>
+      <parameter name="dupname" type="string">
+        <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
+      </parameter>
+    </optional  >
   </message>
   <message name="stages">
     <parameter name="stages" type="string"/>

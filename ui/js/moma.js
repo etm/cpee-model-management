@@ -82,7 +82,7 @@ function duplicate_it(name) {
     $.ajax({
       type: "PUT",
       url: "server/" + gdir + name,
-      data: { dupdir: gdir }
+      data: { dupdir: gdir, dupname: newname }
     });
   }
 }

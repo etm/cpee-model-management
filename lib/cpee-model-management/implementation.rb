@@ -386,17 +386,21 @@ module CPEE
           stage = @p.shift.value
           name = @p[0].value
           source = templates[stage] ? templates[stage] : 'testset.xml'
+          fname = File.join(models,where,name + '.xml')
         else
           where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
           stage = nil
           name = @r[-1].sub(/\.xml$/,'')
           source = File.join(models,where,name + '.xml')
           where = @p[0].value
+          if @p.length > 1
+            fname = File.join(models,where,@p[1].value + '.xml')
+          else
+            fname = File.join(models,where,name + '.xml')
+          end
         end
 
-        fname = File.join(models,where,name + '.xml')
-
-        attrs = JSON::load File.open(fname + '.attrs') rescue {}
+        attrs = JSON::load File.open(source + '.attrs') rescue {}
         stage = attrs['design_stage'] if stage.nil? && attrs['design_stage']
         stage = views[stage] if views && views[stage]
 
