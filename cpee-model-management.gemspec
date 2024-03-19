@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name             = "cpee-model-management"
-  s.version          = "1.1.4"
+  s.version          = "1.2.1"
   s.platform         = Gem::Platform::RUBY
   s.license          = "LGPL-3.0"
   s.summary          = "(Lifecycle) manage your process models in a directory or git repo."
@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.email            = 'juergen.mangler@gmail.com'
   s.homepage         = 'http://cpee.org/'
 
-  s.add_runtime_dependency 'riddl', '~> 0.99'
+  s.add_runtime_dependency 'riddl', '~> 1.0'
   s.add_runtime_dependency 'json', '~> 2.1'
   s.add_runtime_dependency 'cpee', '~> 2.1', '>= 2.1.7'
 end
