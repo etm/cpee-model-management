@@ -309,8 +309,8 @@ module CPEE
         where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[0]
         models = @a[1]
-        name  = File.join(where,File.basename(@r.last,'.dir'))
-        nname = File.join(where,@p[0].value)
+        name  = where.empty? ? File.basename(@r.last,'.dir') : File.join(where,File.basename(@r.last,'.dir'))
+        nname = where.empty? ? @p[0].value : File.join(where,@p[0].value)
         fname  = File.join(models,name + '.dir')
         fnname = File.join(models,nname + '.dir')
         counter = 0
@@ -562,7 +562,7 @@ module CPEE
           XML::Smart::modify(fname) do |doc|
             doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
             doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
-              ele.text = to
+              ele.text = to.gsub(/\A\/+|\/+\z/, '')
             end
             attrs = doc.find('/p:testset/p:attributes/*').map do |e|
               [e.qname.name,e.text]
