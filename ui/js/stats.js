@@ -94,7 +94,7 @@ function instance_upd(uuid,name,state,author,cpu,mem,time,parent) {
   if (author != "") {
     $('[data-id=' + uuid + '] > .author').text(author)
   }
-  $('[data-id=' + uuid + '] > .time').text((new Date(time * 1000)).strftime("%Y-%m-%d, %H:%M:%S"))
+  $('[data-id=' + uuid + '] > .time').text((new Date(time * 1000)).strftime("%H:%M:%S (%b-%d)"))
   instance_res(uuid,cpu,mem)
 }
 function instance_res(uuid,cpu,mem) {
@@ -121,7 +121,7 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,time,parent) {
   }
   $('.cpu',inode).text($.sprintf('%05.2f',cpu))
   $('.mem',inode).text($.sprintf('%05.2f',mem))
-  $('.time',inode).text((new Date(time * 1000)).strftime("%Y-%m-%d, %H:%M:%S"))
+  $('.time',inode).text((new Date(time * 1000)).strftime("%H:%M:%S (%b-%d)"))
   if (parent == "") {
     $('#instances_' + iname).append(inode)
   } else {
