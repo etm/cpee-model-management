@@ -61,12 +61,12 @@ function instance_change(d) {
     if ($('[data-id=' + d.uuid + ']').length > 0) {
       if ($('[data-id=' + d.uuid + ']').attr('data-parent') != parent) {
         $('[data-id=' + d.uuid + ']').remove()
-        instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.parent)
+        instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.time,d.parent)
       } else {
-        instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.parent)
+        instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.time,d.parent)
       }
     } else {
-      instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.parent)
+      instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.time,d.parent)
     }
   } else if (d.state == 'abandoned' || d.state == 'finished') {
     if ($('tr.sub[data-id=' + d.uuid + '] > td > table > tr').length > 0) {
@@ -77,14 +77,14 @@ function instance_change(d) {
   } else {
     if ($('tr.sub[data-id=' + d.uuid + ']').attr('data-parent') != d.parent) {
       $('[data-id=' + d.uuid + ']').remove()
-      instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.parent)
+      instance_add(iname,d.uuid,d.url,d.name,d.state,d.author,0,0,d.time,d.parent)
     } else {
-      instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.parent)
+      instance_upd(d.uuid,d.name,d.state,d.author,0,0,d.time,d.parent)
     }
   }
 }
 
-function instance_upd(uuid,name,state,author,cpu,mem,parent) {
+function instance_upd(uuid,name,state,author,cpu,mem,time,parent) {
   if (name != "") {
     $('[data-id=' + uuid + '] > .name a').text(name)
     $('[data-id=' + uuid + '] > .name a').attr('title',name)
@@ -94,13 +94,14 @@ function instance_upd(uuid,name,state,author,cpu,mem,parent) {
   if (author != "") {
     $('[data-id=' + uuid + '] > .author').text(author)
   }
+  $('[data-id=' + uuid + '] > .time').text((new Date(time * 1000)).strftime("%Y-%m-%d, %H:%M:%S"))
   instance_res(uuid,cpu,mem)
 }
 function instance_res(uuid,cpu,mem) {
   $('[data-id=' + uuid + '] > .cpu').text($.sprintf('%05.2f',cpu))
   $('[data-id=' + uuid + '] > .mem').text($.sprintf('%05.2f',mem))
 }
-function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
+function instance_add(iname,uuid,url,name,state,author,cpu,mem,time,parent) {
   let inode = document.importNode($("#stats_instance")[0].content,true);
   $('.sub',inode).attr('id',uuid)
   $('.sub',inode).attr('data-id',uuid)
@@ -120,6 +121,7 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,parent) {
   }
   $('.cpu',inode).text($.sprintf('%05.2f',cpu))
   $('.mem',inode).text($.sprintf('%05.2f',mem))
+  $('.time',inode).text((new Date(time * 1000)).strftime("%Y-%m-%d, %H:%M:%S"))
   if (parent == "") {
     $('#instances_' + iname).append(inode)
   } else {
@@ -154,7 +156,7 @@ function instances_init(ename) {
     success: (result) => {
       $('instance',result).each(async (i,ele)=>{
         const e = $(ele);
-        setTimeout(()=>{instance_add(iname,e.attr('uuid'),e.attr('url'),e.attr('name'),e.attr('state'),e.attr('author'),e.attr('cpu'),e.attr('mem'),e.attr('parent'))},0)
+        setTimeout(()=>{instance_add(iname,e.attr('uuid'),e.attr('url'),e.attr('name'),e.attr('state'),e.attr('author'),e.attr('cpu'),e.attr('mem'),e.attr('time'),e.attr('parent'))},0)
       })
     }
   })

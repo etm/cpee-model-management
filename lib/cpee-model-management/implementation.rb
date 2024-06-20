@@ -724,10 +724,13 @@ module CPEE
               multi.set(File.join(prefix,'name'),attr['info'])
               multi.set(File.join(prefix,'cpu'),0)
               multi.set(File.join(prefix,'mem'),0)
-              multi.set(File.join(prefix,'time'),0)
+              multi.set(File.join(prefix,'time'),Time.now.to_i)
             end
           elsif %w{stopping}.include?(content['state'])
-            redis.set(File.join(prefix,'state'),content['state'])
+            redis.multi do |multi|
+              multi.set(File.join(prefix,'state'),content['state'])
+              multi.set(File.join(prefix,'time'),Time.now.to_i)
+            end
           elsif %w{stopped}.include?(content['state'])
             redis.multi do |multi|
               multi.decr(File.join(engine,'running'))
@@ -735,7 +738,7 @@ module CPEE
               multi.set(File.join(prefix,'state'),content['state'])
               multi.set(File.join(prefix,'cpu'),0)
               multi.set(File.join(prefix,'mem'),0)
-              multi.set(File.join(prefix,'time'),0)
+              multi.set(File.join(prefix,'time'),Time.now.to_i)
             end
           elsif %w{running}.include?(content['state'])
             oldstate = redis.get(File.join(prefix,'state'))
@@ -748,16 +751,17 @@ module CPEE
             end
           end
 
-          url, author, path, name, state, parent = redis.mget(
+          url, author, path, name, state, time, parent = redis.mget(
             File.join(prefix,'instance-url'),
             File.join(prefix,'author'),
             File.join(prefix,'path'),
             File.join(prefix,'name'),
             File.join(prefix,'state'),
+            File.join(prefix,'time'),
             File.join(prefix,'parent')
           )
           receivers.each do |conn|
-            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :url => url, :author => author, :path => path.to_s, :name => name, :state => content['state'], :parent => parent.to_s)
+            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :url => url, :author => author, :path => path.to_s, :name => name, :state => content['state'], :time => time, :parent => parent.to_s)
           end
         elsif topic == 'task'  && event_name == 'instantiation'
           redis.multi do |multi|
@@ -765,16 +769,17 @@ module CPEE
             multi.set(File.join(engine,content['received']['CPEE-INSTANCE-UUID'],'parent'),notification['instance-uuid'])
           end
           prefix = File.join(engine,content['received']['CPEE-INSTANCE-UUID'].to_s)
-          url, author, path, name, state, parent = redis.mget(
+          url, author, path, name, state, time, parent = redis.mget(
             File.join(prefix,'instance-url'),
             File.join(prefix,'author'),
             File.join(prefix,'path'),
             File.join(prefix,'name'),
             File.join(prefix,'state'),
+            File.join(prefix,'time'),
             File.join(prefix,'parent')
           )
           receivers.each do |conn|
-            conn.send JSON::generate(:topic => 'state', :event => 'change', :engine => engine, :uuid => content['received']['CPEE-INSTANCE-UUID'], :url => url, :author => author, :path => path.to_s, :name => name, :state => state, :parent => parent.to_s)
+            conn.send JSON::generate(:topic => 'state', :event => 'change', :engine => engine, :uuid => content['received']['CPEE-INSTANCE-UUID'], :url => url, :author => author, :path => path.to_s, :name => name, :state => state, :time => time, :parent => parent.to_s)
           end
         elsif topic == 'status'  && event_name == 'resource_utilization'
           redis.multi do |multi|
@@ -821,7 +826,7 @@ module CPEE
         doc = XML::Smart.string('<instances/>')
         redis.lrange(File.join(engine,'instances'),0,-1).each do |i|
           prefix = File.join(engine,i.to_s)
-          url, author, path, name, state, cpu, mem, parent = redis.mget(
+          url, author, path, name, state, cpu, mem, parent,time = redis.mget(
             File.join(prefix,'instance-url'),
             File.join(prefix,'author'),
             File.join(prefix,'path'),
@@ -829,9 +834,10 @@ module CPEE
             File.join(prefix,'state'),
             File.join(prefix,'cpu'),
             File.join(prefix,'mem'),
-            File.join(prefix,'parent')
+            File.join(prefix,'parent'),
+            File.join(prefix,'time')
           )
-          doc.root.add('instance', :uuid => i, :url => url, :author => author, :path => path, :name => name, :state => state, :cpu => cpu, :mem => mem, :parent => parent)
+          doc.root.add('instance', :uuid => i, :url => url, :author => author, :path => path, :name => name, :state => state, :cpu => cpu, :mem => mem, :parent => parent, :time => time)
         end
         Riddl::Parameter::Complex.new('tree','text/xml',doc.to_s)
       end
@@ -842,7 +848,7 @@ module CPEE
         engine = @p[0].value
         uuid = @r[-1]
         prefix = File.join(engine,uuid.to_s)
-        url, author, path, name, state, cpu, mem, parent = redis.mget(
+        url, author, path, name, state, cpu, mem, parent, time = redis.mget(
           File.join(prefix,'instance-url'),
           File.join(prefix,'author'),
           File.join(prefix,'path'),
@@ -850,9 +856,11 @@ module CPEE
           File.join(prefix,'state'),
           File.join(prefix,'cpu'),
           File.join(prefix,'mem'),
-          File.join(prefix,'parent')
+          File.join(prefix,'parent'),
+          File.join(prefix,'time')
+
         )
-        Riddl::Parameter::Complex.new('instance','application/json',JSON.generate(:uuid => uuid, :url => url, :author => author, :path => path, :name => name, :state => state, :cpu => cpu, :mem => mem, :parent => parent))
+        Riddl::Parameter::Complex.new('instance','application/json',JSON.generate(:uuid => uuid, :url => url, :author => author, :path => path, :name => name, :state => state, :cpu => cpu, :mem => mem, :parent => parent, :time => time))
       end
     end #}}}
 
