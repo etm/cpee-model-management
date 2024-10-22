@@ -727,9 +727,11 @@ module CPEE
               multi.set(File.join(prefix,'time'),Time.now.to_i)
             end
           elsif %w{stopping}.include?(content['state'])
-            redis.multi do |multi|
-              multi.set(File.join(prefix,'state'),content['state'])
-              multi.set(File.join(prefix,'time'),Time.now.to_i)
+            unless redis.get(File.join(prefix,'state')) == "stopped" # if stopped arrives before stopping, we have a wrong state. We want to avoid this.
+              redis.multi do |multi|
+                multi.set(File.join(prefix,'state'),content['state'])
+                multi.set(File.join(prefix,'time'),Time.now.to_i)
+              end
             end
           elsif %w{stopped}.include?(content['state'])
             redis.multi do |multi|
