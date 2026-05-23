@@ -1,3 +1,5 @@
 design.pid
 models/*
 models/*/*
+lib
+redis.rdb
