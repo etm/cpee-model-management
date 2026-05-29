@@ -1,6 +1,11 @@
 #!/usr/bin/ruby
-require 'rubygems'
-require 'cpee-model-management/implementation'
+if File.exist?(File.join(__dir__,'..','lib','cpee-model-management','implementation.rb'))
+  require_relative File.join(__dir__,'..','lib','cpee-model-management','implementation')
+elsif File.exist?(File.join(Dir.home,'Projects','cpee-model-management','lib','cpee-model-management','implementation.rb'))
+  require_relative File.join(Dir.home, 'Projects','cpee-model-management','lib','cpee-model-management','implementation')
+else
+  require 'cpee-model-management/implementation'
+end
 
 options = {
   :host => 'localhost',

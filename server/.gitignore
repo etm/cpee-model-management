@@ -2,4 +2,6 @@ design.pid
 models/*
 models/*/*
 lib
+redis.pid
 redis.rdb
+redis.sock

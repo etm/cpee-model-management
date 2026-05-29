@@ -31,7 +31,7 @@ require 'digest/sha1'
 module CPEE
   module ModelManagement
 
-    SERVER = File.expand_path(File.join(__dir__,'moma.xml'))
+    SERVER = File.expand_path(File.join(__dir__,'implementation.xml'))
 
     def self::git_mv(models,old,new)
       cdir = Dir.pwd
@@ -667,7 +667,6 @@ module CPEE
     class StatReceive < Riddl::Implementation #{{{
       def response
         redis         = @a[0]
-        receivers     = @a[1]
         topic         = @p[1].value
         event_name    = @p[2].value
         notification  = JSON.parse(@p[3].value.read)
@@ -734,13 +733,16 @@ module CPEE
               end
             end
           elsif %w{stopped}.include?(content['state'])
-            redis.multi do |multi|
-              multi.decr(File.join(engine,'running'))
-              multi.incr(File.join(engine,'stopped'))
-              multi.set(File.join(prefix,'state'),content['state'])
-              multi.set(File.join(prefix,'cpu'),0)
-              multi.set(File.join(prefix,'mem'),0)
-              multi.set(File.join(prefix,'time'),Time.now.to_i)
+            oldstate = redis.get(File.join(prefix,'state'))
+            if oldstate && oldstate != 'stopped' # stopped can be repeated when reloading instance, any other state before is either fine or can not happen
+              redis.multi do |multi|
+                multi.decr(File.join(engine,'running'))
+                multi.incr(File.join(engine,'stopped'))
+                multi.set(File.join(prefix,'state'),content['state'])
+                multi.set(File.join(prefix,'cpu'),0)
+                multi.set(File.join(prefix,'mem'),0)
+                multi.set(File.join(prefix,'time'),Time.now.to_i)
+              end
             end
           elsif %w{running}.include?(content['state'])
             oldstate = redis.get(File.join(prefix,'state'))
@@ -762,9 +764,7 @@ module CPEE
             File.join(prefix,'time'),
             File.join(prefix,'parent')
           )
-          receivers.each do |conn|
-            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :url => url, :author => author, :path => path.to_s, :name => name, :state => content['state'], :time => time, :parent => parent.to_s)
-          end
+          redis.publish 'forward', JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :url => url, :author => author, :path => path.to_s, :name => name, :state => content['state'], :time => time, :parent => parent.to_s)
         elsif topic == 'task'  && event_name == 'instantiation'
           redis.multi do |multi|
             multi.rpush(File.join(engine,notification['instance-uuid'],'children'),content['received']['CPEE-INSTANCE-UUID'])
@@ -780,18 +780,14 @@ module CPEE
             File.join(prefix,'time'),
             File.join(prefix,'parent')
           )
-          receivers.each do |conn|
-            conn.send JSON::generate(:topic => 'state', :event => 'change', :engine => engine, :uuid => content['received']['CPEE-INSTANCE-UUID'], :url => url, :author => author, :path => path.to_s, :name => name, :state => state, :time => time, :parent => parent.to_s)
-          end
+          redis.publish 'forward', JSON::generate(:topic => 'state', :event => 'change', :engine => engine, :uuid => content['received']['CPEE-INSTANCE-UUID'], :url => url, :author => author, :path => path.to_s, :name => name, :state => state, :time => time, :parent => parent.to_s)
         elsif topic == 'status'  && event_name == 'resource_utilization'
           redis.multi do |multi|
             multi.set(File.join(prefix,'name'),attr['info'])
             multi.set(File.join(prefix,'cpu'),content['utime'] + content['stime'])
             multi.set(File.join(prefix,'mem'),content['mib'])
           end
-          receivers.each do |conn|
-            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :cpu => content['utime'] + content['stime'], :mem => content['mib'])
-          end
+          redis.publish 'forward', JSON::generate(:topic => topic, :event => event_name, :engine => engine, :uuid => notification['instance-uuid'], :cpu => content['utime'] + content['stime'], :mem => content['mib'])
         elsif topic == 'node'  && event_name == 'resource_utilization'
           redis.multi do |multi|
             multi.set(File.join(engine,'cpu_usage'),content['cpu_usage'])
@@ -799,9 +795,7 @@ module CPEE
             multi.set(File.join(engine,'mem_total'),content['mem_total'])
             multi.set(File.join(engine,'mem_available'),content['mem_available'])
           end
-          receivers.each do |conn|
-            conn.send JSON::generate(:topic => topic, :event => event_name, :engine => engine, :cpu_usage => content['cpu_usage'], :mem_free => content['mem_free'], :mem_total => content['mem_total'], :mem_available => content['mem_available'])
-          end
+          redis.publish 'forward', JSON::generate(:topic => topic, :event => event_name, :engine => engine, :cpu_usage => content['cpu_usage'], :mem_free => content['mem_free'], :mem_total => content['mem_total'], :mem_available => content['mem_available'])
         end
       end
     end #}}}
@@ -866,10 +860,35 @@ module CPEE
       end
     end #}}}
 
+    def self::service_handler(opts,cmd,out) #{{{
+      1.upto opts[:workers] do |i|
+        s = File.join(__dir__,'dashing.rb')
+        next if File.exist?(s + '.lock')
+        pid = (File.read(s + '.pid').to_i rescue nil)
+        if (pid.nil? || !(Process.kill(0, pid) rescue false))
+          params = "-p #{opts[:port].to_i + i} #{cmd} 1>/dev/null 2>&1"
+          system "#{s} #{params} 1>/dev/null 2>&1"
+          puts "➡ Service #{File.basename(s)} (#{params}) #{out} ..."
+        end
+      end
+    end #}}}
+    def self::sse_stat_distributor(opts) #{{{
+      conn = opts[:redis_dyn].call "Server SSE"
+      conn.subscribe('forward') do |on|
+        on.message do |what, message|
+          opts[:stat_receivers].each do |conn|
+            conn.send message
+          end
+        end
+      end
+      conn.close
+    end #}}}
 
     def self::implementation(opts)
       opts[:management_receivers] = []
       opts[:stat_receivers] = []
+
+      opts[:workers] = 1
 
       ### set redis_cmd to nil if you want to do global
       ### at least redis_path or redis_url and redis_db have to be set if you do global
@@ -880,13 +899,15 @@ module CPEE
       opts[:redis_pid]                  ||= 'redis.pid' # use e.g. /var/run/redis.pid if you do global. Look it up in your redis config
       opts[:redis_db_name]              ||= 'redis.rdb' # use e.g. /var/lib/redis.rdb for global stuff. Look it up in your redis config
 
-      CPEE::redis_connect opts, 'Server Main'
-
       opts[:sse_keepalive_frequency]    ||= 10
 
+      CPEE::redis_connect opts, 'Server Main'
       Proc.new do
 
         parallel do
+          EM.defer do ### catch all sse connections
+            CPEE::ModelManagement::sse_stat_distributor(opts)
+          end
           EM.add_periodic_timer(opts[:sse_keepalive_frequency]) do
             opts[:management_receivers].each do |sse|
               sse.send_with_id('heartbeat', '42') unless sse&.closed?
@@ -897,11 +918,14 @@ module CPEE
           end
         end
 
-        interface 'events' do
-          run StatReceive, opts[:redis], opts[:stat_receivers] if post 'event'
+        startup do
+          CPEE::ModelManagement::service_handler(opts,'restart','started')
+        end
+        cleanup do
+          CPEE::ModelManagement::service_handler(opts,'stop','stopped')
         end
 
-        interface 'implementation' do
+        on resource do
           run GetList, :main, opts[:views], opts[:models] if get 'stage'
           run GetListFull, opts[:views], opts[:models] if get 'full'
           run GetStages, opts[:themes] if get 'stages'
