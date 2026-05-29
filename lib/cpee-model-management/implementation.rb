@@ -866,7 +866,7 @@ module CPEE
         next if File.exist?(s + '.lock')
         pid = (File.read(s + '.pid').to_i rescue nil)
         if (pid.nil? || !(Process.kill(0, pid) rescue false))
-          params = "-p #{opts[:port].to_i + i} #{cmd} 1>/dev/null 2>&1"
+          params = "-p #{opts[:port].to_i + i} -o basepath=#{File.realpath(opts[:basepath])} #{cmd} 1>/dev/null 2>&1"
           system "#{s} #{params} 1>/dev/null 2>&1"
           puts "➡ Service #{File.basename(s)} (#{params}) #{out} ..."
         end

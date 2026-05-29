@@ -1,11 +1,5 @@
 #!/usr/bin/ruby
-if File.exist?(File.join(__dir__,'..','lib','cpee-model-management','implementation.rb'))
-  require_relative File.join(__dir__,'..','lib','cpee-model-management','implementation')
-elsif File.exist?(File.join(Dir.home,'Projects','cpee-model-management','lib','cpee-model-management','implementation.rb'))
-  require_relative File.join(Dir.home, 'Projects','cpee-model-management','lib','cpee-model-management','implementation')
-else
-  require 'cpee-model-management/implementation'
-end
+require_relative 'implementation'
 
 options = {
   :host => 'localhost',
@@ -31,6 +25,6 @@ Riddl::Server.new(File.join(__dir__,'dashing.xml'), options) do |opts|
   end
 
   interface 'events' do
-    run StatReceive, opts[:redis], opts[:stat_receivers] if post 'event'
+    run CPEE::ModelManagement::StatReceive, opts[:redis], opts[:stat_receivers] if post 'event'
   end
 end.loop!
