@@ -165,13 +165,13 @@ function instances_init(ename) {
 function resource_paint(iname,data,count) {
   count[iname]++;
   Plotly.extendTraces('resource_utilization_plot_' + iname, {y: [[data.cpu_usage], [(data.mem_total-data.mem_available)/data.mem_total * 100]]}, [0,1], value_count)
-  #Plotly.relayout('resource_utilization_plot_' + iname, {
-  #  xaxis: {
-  #    range: [count[iname]-value_count,count[iname]],
-  #    showticklabels: false,
-  #    fixedrange: true
-  #  }
-  #});
+  // Plotly.relayout('resource_utilization_plot_' + iname, {
+  //   xaxis: {
+  //     range: [count[iname]-value_count,count[iname]],
+  //     showticklabels: false,
+  //     fixedrange: true
+  //   }
+  // });
 }
 
 function stats_init() {
