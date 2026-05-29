@@ -299,7 +299,7 @@ module CPEE
         end
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
-        CPEE::ModelManagement::op author, 'mv', models, File.join('.', where, nname + '.xml'), File.join('.', where, name + '.xml')
+        CPEE::ModelManagement::op author, 'mv', models, File.join('.', where, File.basename(fnname)), File.join('.', where, name + '.xml')
         CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
         nil
       end
@@ -330,7 +330,7 @@ module CPEE
           XML::Smart::modify(f) do |doc|
             doc.register_namespace 'p', 'http://cpee.org/ns/properties/2.0'
             doc.find('/p:testset/p:attributes/p:design_dir').each do |ele|
-              ele.text = nname + '.dir'
+              ele.text = File.basename(fnname,'.dir')
             end
             attrs = doc.find('/p:testset/p:attributes/*').map do |e|
               [e.qname.name,e.text]
@@ -339,7 +339,7 @@ module CPEE
           File.write(f + '.attrs',JSON::pretty_generate(attrs))
         end
 
-        CPEE::ModelManagement::op author, 'mv', models, File.join(nname + '.dir'), File.join(name + '.dir')
+        CPEE::ModelManagement::op author, 'mv', models, File.basename(fnname), name + '.dir'
         CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
         nil
       end
