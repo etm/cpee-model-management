@@ -15,9 +15,7 @@
     <parameter name="instance" mimetype="application/json"/>
   </message>
   <message name="item">
-    <parameter name="stage" type="string">
-      <xi:include href="stages"/>
-    </parameter>
+    <parameter name="stage" type="string"/>
     <parameter name="new" type="string">
       <param name="pattern">[a-zA-Z0-9öäüÖÄÜ _-]+</param>
     </parameter>
@@ -51,23 +49,17 @@
     <parameter name="stages" type="string"/>
   </message>
   <message name="newstage">
-    <parameter name="stage" type="string">
-      <xi:include href="stages"/>
-    </parameter>
+    <parameter name="stage" type="string"/>
   </message>
   <message name="stage">
     <optional>
-      <parameter name="stage" type="string">
-        <xi:include href="stages"/>
-      </parameter>
+      <parameter name="stage" type="string"/>
     </optional>
   </message>
   <message name="full">
     <parameter name="full" type="string"/>
     <optional>
-      <parameter name="stage" type="string">
-        <xi:include href="stages"/>
-      </parameter>
+      <parameter name="stage" type="string"/>
     </optional>
   </message>
   <message name="list">

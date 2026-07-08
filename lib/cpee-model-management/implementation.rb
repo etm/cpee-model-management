@@ -184,7 +184,9 @@ module CPEE
         where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         views = @a[1]
         models = @a[2]
-        stage = [@p[0]&.value] || ['draft']
+        templates = @a[3]
+        default_view = @a[4]
+        stage = templates.keys.include?(@p[0]&.value) ? [@p[0]&.value] : [default_view]
         stage << views[stage[0]] if views && views[stage[0]]
 
         names = Dir.glob(File.join(models,where,'*.dir')).map do |f|
@@ -206,7 +208,9 @@ module CPEE
       def response
         views = @a[0]
         models = @a[1]
-        stage = [@p[0]&.value] || ['draft']
+        templates = @a[2]
+        default_view = @a[3]
+        stage = templates.keys.include?(@p[0]&.value) ? [@p[0]&.value] : [default_view]
         stage << views[stage[0]] if views && views[stage[0]]
 
         names = Dir.glob(File.join(models,'*.dir/*.xml')).map do |f|
@@ -234,8 +238,9 @@ module CPEE
         conns = @a[1]
         themes = @a[2]
         models = @a[3]
+        default_view = @a[4]
         name  = File.basename(@r.last,'.xml')
-        nstage = @p[0].value
+        nstage = themes.keys.include?(@p[0]&.value) ? @p[0].value : default_view
         fname  = File.join(models,where,name + '.xml')
 
         dn = CPEE::ModelManagement::get_dn @h['DN']
@@ -381,9 +386,11 @@ module CPEE
         views = @a[1]
         conns = @a[2]
         templates = @a[3]
+        default_view = @a[5]
         if  @p.first.name == 'stage'
           where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
           stage = @p.shift.value
+          stage = templates.keys.include?(stage) ? stage : default_view
           name = @p[0].value
           source = templates[stage] ? templates[stage] : 'testset.xml'
           fname = File.join(models,where,name + '.xml')
@@ -470,7 +477,8 @@ module CPEE
         views  = @a[3]
         force  = @a[4]
         models = @a[5]
-        stage  = @p[0]&.value || 'draft'
+        default_view = @a[6]
+        stage = cock.keys.include?(@p[0]&.value) ? @p[0].value : default_view
 
         fname  = File.join(models,where,name + '.xml')
 
@@ -926,17 +934,17 @@ module CPEE
         end
 
         on resource do
-          run GetList, :main, opts[:views], opts[:models] if get 'stage'
-          run GetListFull, opts[:views], opts[:models] if get 'full'
+          run GetList, :main, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'stage'
+          run GetListFull, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'full'
           run GetStages, opts[:themes] if get 'stages'
-          run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
+          run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view] if post 'item'
           run CreateDir, :main, opts[:management_receivers], opts[:models] if post 'dir'
           on resource 'management' do
             run ManagementSend, opts[:management_receivers] if sse
           end
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
-            run GetList, :sub, opts[:views], opts[:models] if get 'stage'
-            run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if post 'item'
+            run GetList, :sub, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'stage'
+            run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view]if post 'item'
             run DeleteDir, opts[:management_receivers], opts[:models] if delete
             run RenameDir, opts[:management_receivers], opts[:models] if put 'name'
             run CreateDir, :sub, opts[:management_receivers], opts[:models] if post 'dir'
@@ -946,13 +954,13 @@ module CPEE
               run PutItem, :sub, opts[:management_receivers], opts[:models] if put 'content'
               run RenameItem, :sub, opts[:management_receivers], opts[:models] if put 'name'
               run MoveItem, :sub, opts[:management_receivers], opts[:models] if put 'movedir'
-              run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if put 'dupdir'
-              run ShiftItem, :sub, opts[:management_receivers], opts[:themes], opts[:models] if put 'newstage'
+              run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view]if put 'dupdir'
+              run ShiftItem, :sub, opts[:management_receivers], opts[:themes], opts[:models], opts[:default_view] if put 'newstage'
               on resource 'open' do
-                run OpenItem, :sub, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models] if get 'stage'
+                run OpenItem, :sub, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models], opts[:default_view] if get 'stage'
               end
               on resource 'open-new' do
-                run OpenItem, :sub, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models] if get 'stage'
+                run OpenItem, :sub, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models], opts[:default_view] if get 'stage'
               end
             end
           end
@@ -962,13 +970,13 @@ module CPEE
             run PutItem, :main, opts[:management_receivers], opts[:models] if put 'content'
             run RenameItem, :main, opts[:management_receivers], opts[:models] if put 'name'
             run MoveItem, :main, opts[:management_receivers], opts[:models] if put 'movedir'
-            run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models] if put 'dupdir'
-            run ShiftItem, :main, opts[:management_receivers], opts[:themes], opts[:models] if put 'newstage'
+            run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view]if put 'dupdir'
+            run ShiftItem, :main, opts[:management_receivers], opts[:themes], opts[:models], opts[:default_view] if put 'newstage'
             on resource 'open' do
-              run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models] if get 'stage'
+              run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], false, opts[:models], opts[:default_view] if get 'stage'
             end
             on resource 'open-new' do
-              run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models] if get 'stage'
+              run OpenItem, :main, opts[:instantiate], opts[:cockpit], opts[:views], true, opts[:models], opts[:default_view] if get 'stage'
             end
           end
           on resource 'dash' do
