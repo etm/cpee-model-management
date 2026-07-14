@@ -195,28 +195,47 @@ $(document).ready(function() {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
 
-  gstage = urlParams.get('stage') || 'draft';
-  gdir = urlParams.get('dir') ? (urlParams.get('dir') + '/').replaceAll(/\/+/g,'/') : '';
-
-  moma_init();
-
   var shifts = []
+  var default_view;
+
   $.ajax({
     type: "GET",
     url: "server/",
-    data: { stages: 'stages' },
+    data: { stages: 'default' },
     success: (r) => {
-      shifts = shifts.concat(r);
-      shifts = shifts.filter(item => item !== gstage);
+      default_view = r[0];
+      console.log(default_view);
+
+      gstage = urlParams.get('stage') || default_view;
+      gdir = urlParams.get('dir') ? (urlParams.get('dir') + '/').replaceAll(/\/+/g,'/') : '';
+
+      moma_init();
+
+      $('ui-behind span').text(gstage);
+
+      paint(gdir,gstage);
+      setInterval(possibly_paint,1000);
+
+      $.ajax({
+        type: "GET",
+        url: "server/",
+        data: { stages: 'all' },
+        success: (r) => {
+          shifts = shifts.concat(r);
+          shifts = shifts.filter(item => item !== gstage);
+          if (shifts.length == 0) {
+            $('ui-behind span').hide();
+          }
+        }
+      });
     }
   });
 
   window.onpopstate = function(e){
-    let d = e.state || { gstage: 'draft', 'gdir': '' };
+    let d = e.state || { gstage: default_view, 'gdir': '' };
     paint(d.gdir,d.gstage,false);
   };
 
-  $('ui-behind span').text(gstage);
   $('ui-behind span').click((e) => {
     if (shifts.length > 0) {
       var menu = {};
@@ -349,8 +368,6 @@ $(document).ready(function() {
     new CustomMenu(e).contextmenu(menu);
   });
 
-  paint(gdir,gstage);
-
   $('#newmod').on('submit',(e) => {
     $.ajax({
       type: "POST",
@@ -374,6 +391,4 @@ $(document).ready(function() {
     });
     return false;
   });
-
-  setInterval(possibly_paint,1000);
 });

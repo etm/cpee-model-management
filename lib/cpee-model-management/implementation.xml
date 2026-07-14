@@ -46,7 +46,12 @@
     </optional  >
   </message>
   <message name="stages">
-    <parameter name="stages" type="string"/>
+    <parameter name="stages" type="string">
+      <choice>
+        <value>all</value>
+        <value>default</value>
+      </choice>
+    </parameter>
   </message>
   <message name="newstage">
     <parameter name="stage" type="string"/>

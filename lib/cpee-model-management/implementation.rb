@@ -228,7 +228,12 @@ module CPEE
     class GetStages < Riddl::Implementation #{{{
       def response
         themes = @a[0]
-        Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(themes&.keys || []))
+        default_view = @a[1]
+        if @p[0].value == 'all'
+          Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(themes&.keys || []))
+        else
+          Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate([default_view]))
+        end
       end
     end #}}}
 
@@ -914,6 +919,9 @@ module CPEE
       opts[:sse_keepalive_frequency]    ||= 10
 
       CPEE::redis_connect opts, 'Server Main'
+
+      opts[:default_view] ||= opts[:themes]&.first&.first || 'undefined'
+
       Proc.new do
 
         parallel do
@@ -940,7 +948,7 @@ module CPEE
         on resource do
           run GetList, :main, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'stage'
           run GetListFull, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'full'
-          run GetStages, opts[:themes] if get 'stages'
+          run GetStages, opts[:themes], opts[:default_view] if get 'stages'
           run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view] if post 'item'
           run CreateDir, :main, opts[:management_receivers], opts[:models], opts[:default_view] if post 'dir'
           on resource 'management' do
