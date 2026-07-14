@@ -156,7 +156,7 @@ module CPEE
         { 'GN' => 'Christine', 'SN' => 'Ashcreek' }
       end
     end #}}}
-    def self::notify(conns,op,models,f,s=nil) #{{{
+    def self::notify(conns,op,models,f,default,s=nil) #{{{
       what = if f =~ /\.dir$/
         if  op == 'delete'
           { :op => op, :type => :dir, :name => File.basename(f) }
@@ -169,7 +169,7 @@ module CPEE
           { :op => op, :type => :file, :name => f.sub(Regexp.compile(File.join(models,'/')),'') }
         else
           attrs = JSON::load File.open(f + '.attrs')
-          fstage = attrs['design_stage'] rescue 'draft'
+          fstage = attrs['design_stage'] rescue default
           { :op => op, :type => :file, :name => f.sub(Regexp.compile(File.join(models,'/')),''), :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(f).xmlschema }
         end
       end
@@ -194,7 +194,7 @@ module CPEE
           { :type => :dir, :name => File.basename(f), :creator => attrs['creator'], :date => File.mtime(f).xmlschema }
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,where,'*.xml')).map do |f|
           attrs = JSON::load File.open(f + '.attrs')
-          fstage = attrs['design_stage'] rescue 'draft'
+          fstage = attrs['design_stage'] rescue default_view
           { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['guarded'], :guarded_id => attrs['guarded_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
@@ -218,7 +218,7 @@ module CPEE
           { :type => :file, :name => File.join(File.basename(File.dirname(f)),File.basename(f)), :creator => attrs['creator'], :date => File.mtime(f).xmlschema }
         end.compact.uniq.sort_by{ |e| e[:name] } + Dir.glob(File.join(models,'*.xml')).map do |f|
           attrs = JSON::load File.open(f + '.attrs')
-          fstage = attrs['design_stage'] rescue 'draft'
+          fstage = attrs['design_stage'] rescue default_view
           { :type => :file, :name => File.basename(f), :creator => attrs['creator'], :author => attrs['author'], :guarded => attrs['guarded'], :guarded_id => attrs['guarded_id'], :stage => fstage, :date => File.mtime(f).xmlschema } if stage.include?(fstage)
         end.compact.uniq.sort_by{ |e| e[:name] }
 
@@ -265,7 +265,7 @@ module CPEE
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op author, 'shift', models, File.join('.', where, name + '.xml'), File.join('.', where, name + '.xml')
-        CPEE::ModelManagement::notify conns, 'shift', models, fname, fname
+        CPEE::ModelManagement::notify conns, 'shift', models, fname, default_view, fname
         nil
       end
     end #}}}
@@ -279,8 +279,8 @@ module CPEE
         nname = @p[0].value
         fname  = File.join(models,where,name + '.xml')
         fnname = File.join(models,where,nname + '.xml')
+        default_view = @a[3]
         counter = 0
-        stage = 'draft'
         while File.exist?(fnname)
           counter += 1
           fnname = File.join(models,where,nname + counter.to_s + '.xml')
@@ -305,7 +305,7 @@ module CPEE
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op author, 'mv', models, File.join('.', where, File.basename(fnname)), File.join('.', where, name + '.xml')
-        CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
+        CPEE::ModelManagement::notify conns, 'rename', models, fnname, default_view, fname
         nil
       end
     end #}}}
@@ -314,6 +314,7 @@ module CPEE
         where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[0]
         models = @a[1]
+        default_view = @a[2]
         name  = File.join(where,File.basename(@r.last,'.dir'))
         nname = File.join(where,@p[0].value)
         fname  = File.join(models,name + '.dir')
@@ -345,7 +346,7 @@ module CPEE
         end
 
         CPEE::ModelManagement::op author, 'mv', models, File.basename(fnname), name + '.dir'
-        CPEE::ModelManagement::notify conns, 'rename', models, fnname, fname
+        CPEE::ModelManagement::notify conns, 'rename', models, fnname, default_view, fname
         nil
       end
     end #}}}
@@ -356,6 +357,7 @@ module CPEE
         name = @p[0].value
         conns = @a[1]
         models = @a[2]
+        default_view = @a[3]
 
         fname = File.join(models,where,name + '.dir')
         counter = 0
@@ -376,7 +378,7 @@ module CPEE
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op creator, 'add', models, name + '.dir'
-        CPEE::ModelManagement::notify conns, 'create', models, fname
+        CPEE::ModelManagement::notify conns, 'create', models, fname, default_view
         nil
       end
     end #}}}
@@ -450,7 +452,7 @@ module CPEE
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
         CPEE::ModelManagement::op creator, 'add', models, File.join('.', where, name + '.xml')
-        CPEE::ModelManagement::notify conns, 'create', models, fname
+        CPEE::ModelManagement::notify conns, 'create', models, fname, default_view
         nil
       end
     end #}}}
@@ -555,6 +557,7 @@ module CPEE
         where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
+        default_view = @a[3]
 
         name  = File.basename(@r.last,'.xml')
         to = @p[0].value
@@ -576,7 +579,7 @@ module CPEE
           File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
           CPEE::ModelManagement::op author, 'mv', models, File.join('.', to, name + '.xml'), File.join('.', where, name + '.xml')
-          CPEE::ModelManagement::notify conns, 'move', models, File.join(models,to,name + '.xml'), fname
+          CPEE::ModelManagement::notify conns, 'move', models, File.join(models,to,name + '.xml'), default_view, fname
         end
       end
     end #}}}
@@ -585,13 +588,12 @@ module CPEE
         where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
+        default_view = @a[3]
         name  = File.basename(@r.last,'.xml')
         cont = @p[0].value.read
         dn = CPEE::ModelManagement::get_dn @h['DN']
 
         fname = File.join(models,where,name + '.xml')
-
-        p fname
 
         if File.exist?(fname)
           author = dn['GN'] + ' ' + dn['SN']
@@ -602,10 +604,10 @@ module CPEE
               ele.text = dn['GN'] + ' ' + dn['SN']
             end
             if doc.find('/p:testset/p:attributes/p:design_stage').empty?
-              doc.find('/p:testset/p:attributes').first.add('p:design_stage','draft')
+              doc.find('/p:testset/p:attributes').first.add('p:design_stage',default_view)
             else
               doc.find('/p:testset/p:attributes/p:design_stage').each do |ele|
-                ele.text = 'draft' if ele.text.strip == ''
+                ele.text = default_view if ele.text.strip == ''
               end
             end
             attrs = doc.find('/p:testset/p:attributes/*').map do |e|
@@ -615,7 +617,7 @@ module CPEE
           end
           File.write(fname + '.attrs',JSON::pretty_generate(attrs))
           CPEE::ModelManagement::op author, 'add', models, File.join('.', where, name + '.xml')
-          CPEE::ModelManagement::notify conns, 'put', models, fname
+          CPEE::ModelManagement::notify conns, 'put', models, fname, default_view
         else
           @status = 400
         end
@@ -626,6 +628,7 @@ module CPEE
         where = @a[0] == :main ? '' : @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[1]
         models = @a[2]
+        default_view = @a[3]
         name  = File.basename(@r.last,'.xml')
         fname = File.join(models,where,name + '.xml')
 
@@ -633,7 +636,7 @@ module CPEE
         author = dn['GN'] + ' ' + dn['SN']
 
         CPEE::ModelManagement::op author, 'rm', models, File.join('.', where, name + '.xml')
-        CPEE::ModelManagement::notify conns, 'delete', models, fname
+        CPEE::ModelManagement::notify conns, 'delete', models, fname, default_view
       end
     end #}}}
     class DeleteDir < Riddl::Implementation #{{{
@@ -641,6 +644,7 @@ module CPEE
         where = @r[0..-2].map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
         conns = @a[0]
         models = @a[1]
+        default_view = @a[2]
         name  = File.basename(@r.last,'.dir')
         fname = File.join(models,where,name + '.dir')
 
@@ -648,7 +652,7 @@ module CPEE
         author = dn['GN'] + ' ' + dn['SN']
 
         CPEE::ModelManagement::op author, 'rm', models, File.join(where,name + '.dir')
-        CPEE::ModelManagement::notify conns, 'delete', models, fname
+        CPEE::ModelManagement::notify conns, 'delete', models, fname, default_view
       end
     end #}}}
 
@@ -938,22 +942,22 @@ module CPEE
           run GetListFull, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'full'
           run GetStages, opts[:themes] if get 'stages'
           run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view] if post 'item'
-          run CreateDir, :main, opts[:management_receivers], opts[:models] if post 'dir'
+          run CreateDir, :main, opts[:management_receivers], opts[:models], opts[:default_view] if post 'dir'
           on resource 'management' do
             run ManagementSend, opts[:management_receivers] if sse
           end
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
             run GetList, :sub, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'stage'
-            run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view]if post 'item'
-            run DeleteDir, opts[:management_receivers], opts[:models] if delete
-            run RenameDir, opts[:management_receivers], opts[:models] if put 'name'
-            run CreateDir, :sub, opts[:management_receivers], opts[:models] if post 'dir'
+            run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view] if post 'item'
+            run DeleteDir, opts[:management_receivers], opts[:models], opts[:default_view] if delete
+            run RenameDir, opts[:management_receivers], opts[:models], opts[:default_view] if put 'name'
+            run CreateDir, :sub, opts[:management_receivers], opts[:models], opts[:default_view] if post 'dir'
             on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-              run DeleteItem, :sub, opts[:management_receivers], opts[:models] if delete
+              run DeleteItem, :sub, opts[:management_receivers], opts[:models], opts[:default_view] if delete
               run GetItem, :sub, opts[:models] if get
-              run PutItem, :sub, opts[:management_receivers], opts[:models] if put 'content'
-              run RenameItem, :sub, opts[:management_receivers], opts[:models] if put 'name'
-              run MoveItem, :sub, opts[:management_receivers], opts[:models] if put 'movedir'
+              run PutItem, :sub, opts[:management_receivers], opts[:models], opts[:default_view] if put 'content'
+              run RenameItem, :sub, opts[:management_receivers], opts[:models], opts[:default_view] if put 'name'
+              run MoveItem, :sub, opts[:management_receivers], opts[:models], opts[:default_view] if put 'movedir'
               run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view]if put 'dupdir'
               run ShiftItem, :sub, opts[:management_receivers], opts[:themes], opts[:models], opts[:default_view] if put 'newstage'
               on resource 'open' do
@@ -965,11 +969,11 @@ module CPEE
             end
           end
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.xml' do
-            run DeleteItem, :main, opts[:management_receivers], opts[:models] if delete
+            run DeleteItem, :main, opts[:management_receivers], opts[:models], opts[:default_view] if delete
             run GetItem, :main, opts[:models] if get
-            run PutItem, :main, opts[:management_receivers], opts[:models] if put 'content'
-            run RenameItem, :main, opts[:management_receivers], opts[:models] if put 'name'
-            run MoveItem, :main, opts[:management_receivers], opts[:models] if put 'movedir'
+            run PutItem, :main, opts[:management_receivers], opts[:models], opts[:default_view] if put 'content'
+            run RenameItem, :main, opts[:management_receivers], opts[:models], opts[:default_view] if put 'name'
+            run MoveItem, :main, opts[:management_receivers], opts[:models], opts[:default_view] if put 'movedir'
             run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view]if put 'dupdir'
             run ShiftItem, :main, opts[:management_receivers], opts[:themes], opts[:models], opts[:default_view] if put 'newstage'
             on resource 'open' do
