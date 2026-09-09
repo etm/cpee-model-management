@@ -12,7 +12,7 @@ The service is running under port 9316. If this port has to be changed (or the
 host, or local-only access, ...), modify the file moma.conf and change:
 
 ```yaml
- :port: 9250
+ :port: 9316
 ```
 
 You may also change the directory where the models are saved:
