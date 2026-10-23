@@ -95,7 +95,8 @@ ui-behind span {
 [is="x-ui-"] table.ui-table tbody tr:nth-child(odd) td {
   background-color: var(--x-ui-content-light-background);
 }
-[is="x-ui-"] table.ui-table tbody tr:hover td {
+[is="x-ui-"] table.ui-table tbody tr:hover td,
+[is="x-ui-"] table.ui-table tbody tr.active td {
   background-color: var(--x-ui-content-hover-background);
 }
 [is="x-ui-"] table.ui-table tbody td[data-class=ops] {
@@ -105,7 +106,8 @@ ui-behind span {
 [is="x-ui-"] table.ui-table tbody tr:nth-child(odd) td[data-class=ops] {
   background-color: #d0d0d0;
 }
-[is="x-ui-"] table.ui-table tbody tr:hover td[data-class=ops] {
+[is="x-ui-"] table.ui-table tbody tr:hover td[data-class=ops],
+[is="x-ui-"] table.ui-table tbody tr.active td[data-class=ops] {
   background-color: #99cee6b0;
 }
 

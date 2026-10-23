@@ -86,6 +86,19 @@ function duplicate_it(name) {
     });
   }
 }
+function mark_it(tar) {
+  tar.toggleClass('selected');
+  if (tar.hasClass('selected')) {
+    selections.push(tar.attr('data-path'));
+  } else {
+    selections = selections.filter(item => item !== tar.attr('data-path'));
+  }
+  if (selections.length > 0) {
+    $('[data-class=special]').attr('class','');
+  } else {
+    $('[data-class=special]').attr('class','invisible');
+  }
+}
 function delete_it(name) {
   if (confirm('Are you really, really, REALLY sure!')) {
     $.ajax({
@@ -257,23 +270,14 @@ $(document).ready(function() {
   });
 
   $('#models').on('click','[data-class=model]',(e) => {
-    const tar = $(e.currentTarget);
-    tar.toggleClass('selected');
-    if (tar.hasClass('selected')) {
-      selections.push(tar.attr('data-path'));
-    } else {
-      selections = selections.filter(item => item !== tar.attr('data-path'));
-    }
-    if (selections.length > 0) {
-      $('[data-class=special]').attr('class','');
-    } else {
-      $('[data-class=special]').attr('class','invisible');
-    }
+    mark_it($(e.currentTarget));
   });
   $('#models').on('click','th[data-class=special]',(e) => {
     var menu = {};
     var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');
-    menu['Operations'] = [
+    var dirs = new Set(selections.map(item => item.replace(/[^\/]*$/,''))).size;
+    var head = 'Operations (' + selections.length + (selections.length == 1 ? ' entry' : ' entries') + ' in ' + dirs + (dirs == 1 ? ' dir' : ' dirs') + ' marked)';
+    menu[head] = [
       {
         'label': 'Move all marked entries to the current directory',
         'function_call': move_all,
@@ -320,10 +324,17 @@ $(document).ready(function() {
     new CustomMenu(e).contextmenu(menu);
   });
 
-  $('#models').on('click','td[data-class=ops]',(e) => {
+  $(document).on('contextmenu',(e) => { e.preventDefault(); });
+  $(document).on('mousedown',(e) => { $('#models tr.active').removeClass('active'); }); // CustomMenu closes on mousedown
+
+  $('#models').on('click','td[data-class=ops]',ops_menu);
+  $('#models').on('contextmenu','tbody tr',ops_menu);
+  function ops_menu(e) {
+    e.preventDefault();
     var menu = {};
-    var name = $(e.currentTarget).parents('tr').find('td[data-class=name]').attr('data-full-name');
-    var is_model = $(e.currentTarget).parents('tr').find('td[data-class=model]').length > 0 ? true : false;
+    var name = $(e.currentTarget).closest('tr').find('td[data-class=name]').attr('data-full-name');
+    var mark = $(e.currentTarget).closest('tr').find('td[data-class=model]');
+    var is_model = mark.length > 0 ? true : false;
     menu['Operations'] = [
       {
         'label': 'Delete',
@@ -351,6 +362,17 @@ $(document).ready(function() {
         }
       );
     }
+    if (is_model) {
+      menu['Marking'] = [
+        {
+          'label': mark.hasClass('selected') ? 'Unmark' : 'Mark',
+          'function_call': mark_it,
+          'text_icon': '<i class="uidash-icon uidash-icon-' + (mark.hasClass('selected') ? 'checkox' : 'checkox-checked') + '"></i>',
+          'type': undefined,
+          'params': [mark]
+        }
+      ];
+    }
     if (shifts.length > 0 && is_model) {
       menu['Shifting'] = [];
       shifts.forEach(ele => {
@@ -365,8 +387,9 @@ $(document).ready(function() {
         );
       });
     }
+    $(e.currentTarget).closest('tr').addClass('active');
     new CustomMenu(e).contextmenu(menu);
-  });
+  }
 
   $('#newmod').on('submit',(e) => {
     $.ajax({
