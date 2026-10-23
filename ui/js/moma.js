@@ -245,7 +245,7 @@ $(document).ready(function() {
           {
             'label': ele,
             'function_call': change_it,
-            'text_icon': '➔',
+            'text_icon': '<i class="uidash-icon uidash-icon-value"></i>',
             'type': undefined,
             'class': 'capitalized',
             'params': [gdir,ele]
@@ -277,21 +277,21 @@ $(document).ready(function() {
       {
         'label': 'Move all marked entries to the current directory',
         'function_call': move_all,
-        'text_icon': '⨀',
+        'text_icon': '<i class="uidash-icon uidash-icon-move"></i>',
         'type': undefined,
         'params': []
       },
       {
         'label': 'Copy all marked entries to the current directory',
         'function_call': copy_all,
-        'text_icon': '⨁',
+        'text_icon': '<i class="uidash-icon uidash-icon-copy"></i>',
         'type': undefined,
         'params': []
       },
       {
         'label': 'Delete all marked entries',
         'function_call': delete_all,
-        'text_icon': '❌',
+        'text_icon': '<i class="uidash-icon uidash-icon-delete"></i>',
         'type': undefined,
         'params': []
       },
@@ -299,7 +299,7 @@ $(document).ready(function() {
         'label': 'Unmarked all marked entries',
         'function_call': unmark_all,
         'type': undefined,
-        'text_icon': '🟥',
+        'text_icon': '<i class="uidash-icon uidash-icon-checkox"></i>',
         'params': []
       }
     ];
@@ -310,7 +310,7 @@ $(document).ready(function() {
           {
             'label': 'Shift all marked entries to ' + ele,
             'function_call': shift_all,
-            'text_icon': '➔',
+            'text_icon': '<i class="uidash-icon uidash-icon-shift"></i>',
             'type': undefined,
             'params': [ele]
           }
@@ -328,7 +328,7 @@ $(document).ready(function() {
       {
         'label': 'Delete',
         'function_call': delete_it,
-        'text_icon': '❌',
+        'text_icon': '<i class="uidash-icon uidash-icon-delete"></i>',
         'type': undefined,
         'params': [name]
       },
@@ -336,7 +336,7 @@ $(document).ready(function() {
         'label': 'Rename',
         'function_call': rename_it,
         'type': undefined,
-        'text_icon': '📛',
+        'text_icon': '<i class="uidash-icon uidash-icon-rename"></i>',
         'params': [name]
       }
     ];
@@ -345,7 +345,7 @@ $(document).ready(function() {
         {
           'label': 'Duplicate',
           'function_call': duplicate_it,
-          'text_icon': '➕',
+          'text_icon': '<i class="uidash-icon uidash-icon-copy"></i>',
           'type': undefined,
           'params': [name]
         }
@@ -358,7 +358,7 @@ $(document).ready(function() {
           {
             'label': 'Shift to ' + ele,
             'function_call': shift_it,
-            'text_icon': '➔',
+            'text_icon': '<i class="uidash-icon uidash-icon-shift"></i>',
             'type': undefined,
             'params': [name,ele]
           }

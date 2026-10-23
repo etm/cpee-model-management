@@ -26,21 +26,9 @@
     <!-- libs, do not modify. When local than load local libs. -->
     <script type="text/javascript" src="/js_libs/jquery.min.js"></script>
     <script type="text/javascript" src="/js_libs/jquery.browser.js"></script>
-    <script type="text/javascript" src="/js_libs/jquery.svg.min.js"></script>
-    <script type="text/javascript" src="/js_libs/jquery.svgdom.min.js"></script>
-    <script type="text/javascript" src="/js_libs/vkbeautify.js"></script>
-    <script type="text/javascript" src="/js_libs/util.js"></script>
     <script type="text/javascript" src="/js_libs/printf.js"></script>
     <script type="text/javascript" src="/js_libs/strftime.min.js"></script>
-    <script type="text/javascript" src="/js_libs/parsequery.js"></script>
-    <script type="text/javascript" src="/js_libs/underscore.min.js"></script>
-    <script type="text/javascript" src="/js_libs/jquery.caret.min.js"></script>
-    <script type="text/javascript" src="/js_libs/jquery.cookie.js"></script>
     <script type="text/javascript" src="/js_libs/plotly.min.js"></script>
-
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
-
-    <script type="text/javascript" src="/js_libs/relaxngui.js"></script>
 
     <script type="text/javascript" src="/js_libs/uidash.js"></script>
     <script type="text/javascript" src="/js_libs/custommenu.js"></script>
@@ -49,8 +37,6 @@
     <link   rel="stylesheet"      href="/js_libs/uidash.css" type="text/css"/>
 
     <link   rel="stylesheet"      href="/global_ui/ui.css" type="text/css"/>
-
-    <link   rel="stylesheet"      href="/js_libs/relaxngui.css" type="text/css"/>
 
     <!-- custom stuff, play arround  -->
     <link   rel="stylesheet"      href="css/moma.css" type="text/css"/>
@@ -75,11 +61,11 @@
         <ui-area data-belongs-to-tab="models">
           <div class="fixed">
             <div class="text">Your Models are saved/versioned in <a target='_blank' href='https://git-scm.com/'>GIT</a>. So fret not. Just send an email to <a href="mail:helpdesk@cpee.org">helpdesk@cpee.org</a> if you are lost. Click on <strong>Icons</strong> of directory entries, to mark them. Then change to a different directory and move/copy them there. And as always: <a target='_blank' href='https://www.youtube.com/watch?v=kkxj5xVLyj0&feature=youtu.be&t=56'>get dressed for success</a>.</div>
-            <div class="breadcrumb"><span class="crumb" onclick="">⌂ Home</span></div>
+            <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
           </div>
           <table id="models" class='ui-table'>
             <thead>
-              <th data-class='special' class='invisible' title='click for operations'>🔧</th>
+              <th data-class='special' class='invisible' title='click for operations'><i class="uidash-icon uidash-icon-operations"></i></th>
               <th>Name</th>
               <th><abbr title='force new instance'>F</abbr></th>
               <th><abbr title='link to model source'>M</abbr></th>
@@ -91,7 +77,7 @@
             </thead>
             <template id="folder">
               <tr>
-                <td data-class='folder' class="noselect" title='click to mark'>📁</td>
+                <td data-class='folder' class="noselect" title='click to mark'><i class="uidash-icon uidash-icon-folder"></i></td>
                 <td data-class='name' data-full-name=''><a href=''></a></td>
                 <td></td>
                 <td></td>
@@ -99,12 +85,12 @@
                 <td></td>
                 <td></td>
                 <td data-class='date'></td>
-                <td data-class='ops' class="noselect" title='click for operations'><span>🔧</span></td>
+                <td data-class='ops' class="noselect" title='click for operations'><span><i class="uidash-icon uidash-icon-operations"></i></span></td>
               </tr>
             </template>
             <template id="model">
               <tr>
-                <td data-class='model' class="noselect" title='click to mark'>𝌭</td>
+                <td data-class='model' class="noselect" title='click to mark'><i class="uidash-icon uidash-icon-checkox"></i></td>
                 <td data-class='name' data-full-name=''><a target='_blank' href=''></a></td>
                 <td data-class='force'>[<a target='_blank' href='' title='force new instance'>F</a>]</td>
                 <td data-class='raw'>[<a target='_blank' href='' title='link to model source'>M</a>]</td>
@@ -112,7 +98,7 @@
                 <td data-class='guarded'><abbr title=''></abbr></td>
                 <td data-class='resource'></td>
                 <td data-class='date'></td>
-                <td data-class='ops' class="noselect" title='click for operations'><span>🔧</span></td>
+                <td data-class='ops' class="noselect" title='click for operations'><span><i class="uidash-icon uidash-icon-operations"></i></span></td>
               </tr>
             </template>
             <tbody>
@@ -127,7 +113,7 @@
             getting confused and shooting yourself in the foot in your little
             modelling world we allow only unique names. Better safe than sorry.
           </div>
-          <div class="breadcrumb"><span class="crumb" onclick="">⌂ Home</span></div>
+          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
           <form id="newmod">
             <p>
               <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
@@ -142,7 +128,7 @@
             Create an empty directory. Beware, if a directory of the same name
             already exists it can not be created.
           </div>
-          <div class="breadcrumb"><span class="crumb" onclick="">⌂ Home</span></div>
+          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
           <form id="newdir">
             <p>
               <input type="text" name="newdir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>

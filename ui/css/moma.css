@@ -39,6 +39,9 @@
 td.selected {
   background-color: var(--x-ui-selection-background) !important;
 }
+td.selected i.uidash-icon-checkox:before {
+  content: "\f11d"; /* uidash-icon-checkox-checked */
+}
 
 div.fixed {
   position: sticky;
@@ -96,6 +99,7 @@ ui-behind span {
   background-color: var(--x-ui-content-hover-background);
 }
 [is="x-ui-"] table.ui-table tbody td[data-class=ops] {
+  font-size: 1.4em;
   text-align: center;
 }
 [is="x-ui-"] table.ui-table tbody tr:nth-child(odd) td[data-class=ops] {
@@ -111,4 +115,16 @@ ui-behind span {
 
 tr.contextmenuitem .capitalized {
   text-transform: capitalize;
+}
+tr.contextmenuitem > .contextmenuicon {
+  vertical-align: middle;
+}
+tr.contextmenuitem > .contextmenuicon div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+}
+tr.contextmenuitem > .contextmenuicon i.uidash-icon {
+  font-size: 1.2em;
 }
