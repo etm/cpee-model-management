@@ -114,7 +114,7 @@
             getting confused and shooting yourself in the foot in your little
             modelling world we allow only unique names. Better safe than sorry.
           </div>
-          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
+          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-text uidash-icon-home"></i> Home</span></div>
           <form id="newmod">
             <p>
               <input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="Filename (no extension necessary). Only use characters, spaces, underlines and dashes."/>
@@ -129,7 +129,7 @@
             Create an empty directory. Beware, if a directory of the same name
             already exists it can not be created.
           </div>
-          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
+          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-text uidash-icon-home"></i> Home</span></div>
           <form id="newdir">
             <p>
               <input type="text" name="newdir" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="Directory name. Only use characters, spaces, underlines and dashes."/>
@@ -141,14 +141,14 @@
         </ui-area>
         <ui-area data-belongs-to-tab="search" class="inactive">
           <div class="text">
-            Search the current directory and all directories below it. Finds
-            models and directories whose name contains the search term, as
-            well as models whose content contains it (case insensitive).
+            Finds models and directories whose name contains what you are
+            looking for, as well as models that contain it somewhere inside
+            (case insensitive).
           </div>
-          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
+          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-text uidash-icon-home"></i> Home</span></div>
           <form id="search">
             <p>
-              <input type="text" name="search" required placeholder="Search term."/>
+              <input type="text" name="search" required placeholder="Search for model names and terms inside models."/>
             </p>
             <p>
               <button>Search</button>

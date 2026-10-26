@@ -268,7 +268,11 @@ module CPEE
             { :type => :dir, :name => File.basename(f), :path => path, :creator => attrs['creator'], :date => File.mtime(full).xmlschema, :name_match => true, :content_matches => 0 }
           else
             fstage = attrs['design_stage'] || default_view
-            { :type => :file, :name => File.basename(f), :path => path, :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(full).xmlschema, :name_match => names.include?(f), :content_matches => contents[f].to_i } if stage.include?(fstage)
+            name_match = names.include?(f)
+            # each model contains its name (info) and its dir (design_dir) once, these are no real content hits
+            self_matches = (name_match ? 1 : 0) + (File.dirname(path) != '.' && File.dirname(path).downcase.include?(query.downcase) ? 1 : 0)
+            content_matches = [contents[f].to_i - self_matches, 0].max
+            { :type => :file, :name => File.basename(f), :path => path, :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(full).xmlschema, :name_match => name_match, :content_matches => content_matches } if stage.include?(fstage) && (name_match || content_matches > 0)
           end
         end.compact
 

@@ -228,8 +228,7 @@ function search(term) {
         $('[data-class=dir] a',clone).attr('href','javascript:show_dir("' + pdir + '")');
         let found = [];
         if (data['name_match']) { found.push('name'); }
-        // a single content match next to a name match is just the name saved inside the model
-        if (data['content_matches'] > (data['name_match'] ? 1 : 0)) { found.push('content (' + data['content_matches'] + (data['content_matches'] == 1 ? ' time)' : ' times)')); }
+        if (data['content_matches'] > 0) { found.push('content (' + data['content_matches'] + (data['content_matches'] == 1 ? ' time)' : ' times)')); }
         $('[data-class=found]',clone).text(found.join(', '));
         $('[data-class=author]',clone).text(data['author'] || data['creator']);
         $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
