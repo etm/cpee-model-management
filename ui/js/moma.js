@@ -227,7 +227,7 @@ function search(term) {
         $('[data-class=dir] a',clone).text('/' + pdir.replace(/\.dir/g,''));
         $('[data-class=dir] a',clone).attr('href','javascript:show_dir("' + pdir + '")');
         let found = [];
-        if (data['name_match']) { found.push('name'); }
+        if (data['name_match']) { found.push(data.type == 'dir' ? 'directory' : 'name'); }
         if (data['content_matches'] > 0) { found.push('content (' + data['content_matches'] + (data['content_matches'] == 1 ? ' time)' : ' times)')); }
         $('[data-class=found]',clone).text(found.join(', '));
         $('[data-class=author]',clone).text(data['author'] || data['creator']);
