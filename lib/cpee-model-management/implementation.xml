@@ -67,6 +67,12 @@
       <parameter name="stage" type="string"/>
     </optional>
   </message>
+  <message name="search">
+    <parameter name="search" type="string"/>
+    <optional>
+      <parameter name="stage" type="string"/>
+    </optional>
+  </message>
   <message name="list">
     <parameter name="list" mimetype="application/json"/>
   </message>
@@ -79,6 +85,7 @@
     <get in="stage" out="list"/>
     <get in="full" out="list"/>
     <get in="stages" out="list"/>
+    <get in="search" out="list"/>
     <resource relative="management">
       <sse/>
     </resource>
@@ -86,6 +93,7 @@
       <post in="item"/>
       <post in="dir"/>
       <get in="stage" out="list"/>
+      <get in="search" out="list"/>
       <delete/>
       <put in="name"/> <!-- rename -->
       <resource relative="[a-zA-Z0-9&#xF6;&#xE4;&#xFC;&#xD6;&#xC4;&#xDC; _-]+\.xml">

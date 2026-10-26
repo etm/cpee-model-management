@@ -200,6 +200,46 @@ function paint(pdir,gstage,statesave=true) {
   });
 }
 
+function show_dir(dir) {
+  paint(dir,gstage);
+  uidash_activate_tab($('ui-tab').first());
+}
+
+function search(term) {
+  $.ajax({
+    type: "GET",
+    url: "server/" + gdir,
+    data: { search: term, stage: gstage },
+    success: function(res) {
+      $('#searchresults tbody').empty();
+      let tempcont = $();
+      $(res).each(function(k,data) {
+        let pdir = data['path'].replace(/[^\/]*$/,'');
+        var clone = document.importNode(document.querySelector('#searchresult').content,true);
+        if (data.type == 'dir') {
+          $('[data-class=name] a',clone).text(data['name'].replace(/\.dir$/,'') + '/');
+          $('[data-class=name] a',clone).attr('href','javascript:show_dir("' + data['path'] + '")');
+        } else {
+          $('[data-class=name] a',clone).text(data['name']);
+          $('[data-class=name] a',clone).attr('href','server/' + data['path'] + '/open?stage=' + gstage);
+          $('[data-class=name] a',clone).attr('target','_blank');
+        }
+        $('[data-class=dir] a',clone).text('/' + pdir.replace(/\.dir/g,''));
+        $('[data-class=dir] a',clone).attr('href','javascript:show_dir("' + pdir + '")');
+        let found = [];
+        if (data['name_match']) { found.push('name'); }
+        // a single content match next to a name match is just the name saved inside the model
+        if (data['content_matches'] > (data['name_match'] ? 1 : 0)) { found.push('content (' + data['content_matches'] + (data['content_matches'] == 1 ? ' time)' : ' times)')); }
+        $('[data-class=found]',clone).text(found.join(', '));
+        $('[data-class=author]',clone).text(data['author'] || data['creator']);
+        $('[data-class=date]',clone).text(new Date(data['date']).strftime('%Y-%m-%d, %H:%M:%S'));
+        tempcont.push(clone);
+      });
+      $('#searchresults tbody').append(tempcont);
+    }
+  });
+}
+
 function change_it(gdir,gstage) {
   window.location.href = window.location.pathname + '?stage=' + gstage + '&dir=' + gdir;
 }
@@ -412,6 +452,11 @@ $(document).ready(function() {
         uidash_activate_tab($('ui-tab').first());
       }
     });
+    return false;
+  });
+
+  $('#search').on('submit',(e) => {
+    search($("#search input[name=search]").val());
     return false;
   });
 });

@@ -49,6 +49,7 @@
       <ui-tabbar>
         <ui-before                                   ></ui-before>
         <ui-tab class=""         data-tab="models"   >Models</ui-tab>
+        <ui-tab class="inactive" data-tab="search"   >Search</ui-tab>
         <ui-tab class="inactive" data-tab="newmodel" >New Model</ui-tab>
         <ui-tab class="inactive" data-tab="newdir"   >New Dir</ui-tab>
         <ui-space                                    ></ui-space>
@@ -137,6 +138,42 @@
               <button>New Directory</button>
             </p>
           </form>
+        </ui-area>
+        <ui-area data-belongs-to-tab="search" class="inactive">
+          <div class="text">
+            Search the current directory and all directories below it. Finds
+            models and directories whose name contains the search term, as
+            well as models whose content contains it (case insensitive).
+          </div>
+          <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-icon-home"></i> Home</span></div>
+          <form id="search">
+            <p>
+              <input type="text" name="search" required placeholder="Search term."/>
+            </p>
+            <p>
+              <button>Search</button>
+            </p>
+          </form>
+          <table id="searchresults" class='ui-table'>
+            <thead>
+              <th>Name</th>
+              <th>Directory</th>
+              <th>Found In</th>
+              <th>Changed By</th>
+              <th>Changed At</th>
+            </thead>
+            <template id="searchresult">
+              <tr>
+                <td data-class='name'><a href=''></a></td>
+                <td data-class='dir'><a href=''></a></td>
+                <td data-class='found'></td>
+                <td data-class='author'></td>
+                <td data-class='date'></td>
+              </tr>
+            </template>
+            <tbody>
+            </tbody>
+          </table>
         </ui-area>
         <ui-area data-belongs-to-tab="instances" class="inactive">
           <p>

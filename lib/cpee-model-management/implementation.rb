@@ -27,6 +27,7 @@ require 'shellwords'
 require 'securerandom'
 require 'cpee/redis'
 require 'digest/sha1'
+require 'open3'
 
 module CPEE
   module ModelManagement
@@ -101,6 +102,15 @@ module CPEE
       File.delete(fname + '.active') rescue nil
       File.delete(fname + '.active-uuid') rescue nil
     end
+
+    def self::git_init(models) #{{{
+      _, status = Open3.capture2e('git', 'rev-parse', '--is-inside-work-tree', chdir: models)
+      return if status.success?
+      Open3.capture2e('git', 'init', chdir: models)
+      Open3.capture2e('git', 'add', '-A', chdir: models)
+      Open3.capture2e('git', '-c', 'user.name=Christine Ashcreek', '-c', 'user.email=dev@null.com', 'commit', '-m', 'initial', chdir: models)
+      puts "➡ Models directory #{models} is now a git repository"
+    end #}}}
 
     def self::git_dir(models,file)
       return nil if file.nil?
@@ -223,6 +233,46 @@ module CPEE
         end.compact.uniq.sort_by{ |e| e[:name] }
 
         Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(names))
+      end
+    end #}}}
+    class Search < Riddl::Implementation #{{{
+      def response
+        where = @a[0] == :main ? '' : @r.map{ |d| Riddl::Protocols::Utils::unescape(d) }.join('/')
+        views = @a[1]
+        models = @a[2]
+        templates = @a[3]
+        default_view = @a[4]
+        query = @p[0].value.strip
+        stage = templates.keys.include?(@p[1]&.value) ? [@p[1]&.value] : [default_view]
+        stage << views[stage[0]] if views && views[stage[0]]
+
+        return Riddl::Parameter::Complex.new('list','application/json','[]') if query == ''
+
+        base = File.join(models,where)
+
+        # (a) names of models and dirs in and below base
+        names = Dir.glob('**/*.{dir,xml}', base: base).select do |f|
+          File.basename(f).sub(/\.(dir|xml)$/,'').downcase.include?(query.downcase)
+        end
+
+        # (b) contents of models in and below base, through git grep (--no-index if base is not inside a git)
+        _, status = Open3.capture2e('git', 'rev-parse', '--is-inside-work-tree', chdir: base)
+        out, _ = Open3.capture2('git', 'grep', '-I', '-i', '-F', '-o', '-z', status.success? ? '--untracked' : '--no-index', '-e', query, '--', '*.xml', chdir: base)
+        contents = out.split("\n").map{ |l| l.split("\0",2).first }.tally # -o yields one line per occurrence
+
+        res = (names | contents.keys).sort.map do |f|
+          full = File.join(base,f)
+          path = where == '' ? f : File.join(where,f)
+          attrs = JSON::load File.open(full + '.attrs') rescue {}
+          if f =~ /\.dir$/
+            { :type => :dir, :name => File.basename(f), :path => path, :creator => attrs['creator'], :date => File.mtime(full).xmlschema, :name_match => true, :content_matches => 0 }
+          else
+            fstage = attrs['design_stage'] || default_view
+            { :type => :file, :name => File.basename(f), :path => path, :creator => attrs['creator'], :author => attrs['author'], :stage => fstage, :date => File.mtime(full).xmlschema, :name_match => names.include?(f), :content_matches => contents[f].to_i } if stage.include?(fstage)
+          end
+        end.compact
+
+        Riddl::Parameter::Complex.new('list','application/json',JSON::pretty_generate(res))
       end
     end #}}}
     class GetStages < Riddl::Implementation #{{{
@@ -939,6 +989,7 @@ module CPEE
         end
 
         startup do
+          CPEE::ModelManagement::git_init(opts[:models])
           CPEE::ModelManagement::service_handler(opts,'restart','started')
         end
         cleanup do
@@ -949,6 +1000,7 @@ module CPEE
           run GetList, :main, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'stage'
           run GetListFull, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'full'
           run GetStages, opts[:themes], opts[:default_view] if get 'stages'
+          run Search, :main, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'search'
           run Create, :main, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view] if post 'item'
           run CreateDir, :main, opts[:management_receivers], opts[:models], opts[:default_view] if post 'dir'
           on resource 'management' do
@@ -956,6 +1008,7 @@ module CPEE
           end
           on resource '[a-zA-Z0-9öäüÖÄÜ _-]+\.dir' do
             run GetList, :sub, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'stage'
+            run Search, :sub, opts[:views], opts[:models], opts[:templates], opts[:default_view] if get 'search'
             run Create, :sub, opts[:views], opts[:management_receivers], opts[:templates], opts[:models], opts[:default_view] if post 'item'
             run DeleteDir, opts[:management_receivers], opts[:models], opts[:default_view] if delete
             run RenameDir, opts[:management_receivers], opts[:models], opts[:default_view] if put 'name'
