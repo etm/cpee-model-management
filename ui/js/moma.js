@@ -212,6 +212,8 @@ function search(term) {
     data: { search: term, stage: gstage },
     success: function(res) {
       $('#searchresults tbody').empty();
+      const rank = (data) => data.type == 'dir' ? 0 : (data['name_match'] ? 1 : 2);
+      res.sort((a,b) => rank(a) - rank(b));
       let tempcont = $();
       $(res).each(function(k,data) {
         let pdir = data['path'].replace(/[^\/]*$/,'');
