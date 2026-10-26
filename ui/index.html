@@ -143,12 +143,13 @@
           <div class="text">
             Finds models and directories whose name contains what you are
             looking for, as well as models that contain it somewhere inside
-            (case insensitive).
+            (case insensitive). Your search has to consist of more than 3
+            characters.
           </div>
           <div class="breadcrumb"><span class="crumb" onclick=""><i class="uidash-icon uidash-text uidash-icon-home"></i> Home</span></div>
           <form id="search">
             <p>
-              <input type="text" name="search" required placeholder="Search for model names and terms inside models."/>
+              <input type="text" name="search" required minlength="4" placeholder="Search for model names and terms inside models (more than 3 chars)."/>
             </p>
             <p>
               <button>Search</button>
