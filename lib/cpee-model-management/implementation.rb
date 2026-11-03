@@ -40,7 +40,7 @@ module CPEE
       p1 = Pathname.new(File.dirname(old))
       p2 = Pathname.new(File.dirname(new))
       told = File.basename(old)
-      tnew = File.join(p1.relative_path_from(p1).to_s,File.basename(new))
+      tnew = File.join(p2.relative_path_from(p1).to_s,File.basename(new))
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told}"                      "#{tnew}"            2>/dev/null`
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active'}"                               2>/dev/null`
       `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active-uuid'}"                          2>/dev/null`
@@ -404,7 +404,7 @@ module CPEE
           File.write(f + '.attrs',JSON::pretty_generate(attrs))
         end
 
-        CPEE::ModelManagement::op author, 'mv', models, File.basename(fnname), name + '.dir'
+        CPEE::ModelManagement::op author, 'mv', models, File.join('.', where, File.basename(fnname)), File.join('.', name + '.dir')
         CPEE::ModelManagement::notify conns, 'rename', models, fnname, default_view, fname
         nil
       end
@@ -461,11 +461,8 @@ module CPEE
           name = @r[-1].sub(/\.xml$/,'')
           source = File.join(models,where,name + '.xml')
           where = @p[0].value
-          if @p.length > 1
-            fname = File.join(models,where,@p[1].value + '.xml')
-          else
-            fname = File.join(models,where,name + '.xml')
-          end
+          name = @p[1].value if @p.length > 1
+          fname = File.join(models,where,name + '.xml')
         end
 
         attrs = JSON::load File.open(source + '.attrs') rescue {}
@@ -510,7 +507,7 @@ module CPEE
         end
         File.write(fname + '.attrs',JSON::pretty_generate(attrs))
 
-        CPEE::ModelManagement::op creator, 'add', models, File.join('.', where, name + '.xml')
+        CPEE::ModelManagement::op creator, 'add', models, File.join('.', where, File.basename(fname))
         CPEE::ModelManagement::notify conns, 'create', models, fname, default_view
         nil
       end
