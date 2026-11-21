@@ -98,8 +98,8 @@ function instance_upd(uuid,name,state,author,cpu,mem,time,parent) {
   instance_res(uuid,cpu,mem)
 }
 function instance_res(uuid,cpu,mem) {
-  $('[data-id=' + uuid + '] > .cpu').text($.sprintf('%05.2f',cpu))
-  $('[data-id=' + uuid + '] > .mem').text($.sprintf('%05.2f',mem))
+  $('[data-id=' + uuid + '] > .cpu').text(cpu.sprintf('%05.2f'))
+  $('[data-id=' + uuid + '] > .mem').text(mem.sprintf('%05.2f'))
 }
 function instance_add(iname,uuid,url,name,state,author,cpu,mem,time,parent) {
   let inode = document.importNode($("#stats_instance")[0].content,true);
@@ -119,8 +119,8 @@ function instance_add(iname,uuid,url,name,state,author,cpu,mem,time,parent) {
   if (author != "") {
     $('.author',inode).text(author)
   }
-  $('.cpu',inode).text($.sprintf('%05.2f',cpu))
-  $('.mem',inode).text($.sprintf('%05.2f',mem))
+  $('.cpu',inode).text(cpu.sprintf('%05.2f'))
+  $('.mem',inode).text(mem.sprintf('%05.2f'))
   $('.time',inode).text((new Date(time * 1000)).strftime("%H:%M:%S (%b-%d)"))
   if (parent == "") {
     $('#instances_' + iname).append(inode)
