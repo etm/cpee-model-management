@@ -79,12 +79,15 @@ module CPEE
     end
 
     def self::git_init(models) #{{{
-      _, status = Open3.capture2e('git', 'rev-parse', '--is-inside-work-tree', chdir: models)
-      return if status.success?
-      Open3.capture2e('git', 'init', chdir: models)
-      Open3.capture2e('git', 'add', '-A', chdir: models)
-      Open3.capture2e('git', '-c', 'user.name=Christine Ashcreek', '-c', 'user.email=dev@null.com', 'commit', '-m', 'initial', chdir: models)
-      puts "➡ Models directory #{models} is now a git repository"
+      # models has to be a repository of its own, one around it (e.g. the code
+      # with the default models) does not count
+      root = File.realpath(models)
+      top, status = Open3.capture2e('git', 'rev-parse', '--show-toplevel', chdir: root)
+      return if status.success? && top.strip == root
+      Open3.capture2e('git', 'init', '-q', chdir: root)
+      Open3.capture2e('git', 'add', '-A', chdir: root)
+      Open3.capture2e('git', '-c', 'user.name=Christine Ashcreek', '-c', 'user.email=dev@null.com', 'commit', '-q', '-m', 'initial', chdir: root)
+      puts "➡ Models directory #{root} is now a git repository"
     end #}}}
 
     def self::op(author,op,models,new,old=nil) #{{{
