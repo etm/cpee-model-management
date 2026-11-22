@@ -22,8 +22,6 @@ require 'riddl/server'
 require 'riddl/client'
 require 'riddl/protocols/utils'
 require 'fileutils'
-require 'pathname'
-require 'shellwords'
 require 'securerandom'
 require 'cpee/redis'
 require 'digest/sha1'
@@ -31,49 +29,34 @@ require 'open3'
 
 module CPEE
   module ModelManagement
-
     SERVER = File.expand_path(File.join(__dir__,'implementation.xml'))
+    GIT_LOCK = Mutex.new
 
-    def self::git_mv(models,old,new)
-      cdir = Dir.pwd
-      Dir.chdir(File.join(models,File.dirname(old)))
-      p1 = Pathname.new(File.dirname(old))
-      p2 = Pathname.new(File.dirname(new))
-      told = File.basename(old)
-      tnew = File.join(p2.relative_path_from(p1).to_s,File.basename(new))
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told}"                      "#{tnew}"            2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active'}"                               2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{told + '.active-uuid'}"                          2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple mv     "#{told + '.attrs'}"          "#{tnew + '.attrs'}"  2>/dev/null`
-      Dir.chdir(cdir)
-      CPEE::ModelManagement::fs_mv(models,old,new) # fallback
-    end
-    def self::git_rm(models,new)
-      cdir = Dir.pwd
-      Dir.chdir(File.join(models,File.dirname(new)))
-      tnew = File.basename(new)
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}" 2>/dev/null`
-       FileUtils.rm_rf(tnew)
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.active"      2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.active-uuid" 2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{tnew}.attrs"      2>/dev/null`
-      Dir.chdir(cdir)
-      CPEE::ModelManagement::fs_rm(models,new) # fallback
-    end
-    def self::git_shift(models,new)
-      cdir = Dir.pwd
-      Dir.chdir(File.join(models,File.dirname(new)))
-      nnew = File.basename(new)
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{nnew}.active"      2>/dev/null`
-      `git -c user.name='Christine Ashcreek' -c user.email=dev@null.com -c push.default=simple rm -rf "#{nnew}.active-uuid" 2>/dev/null`
-      Dir.chdir(cdir)
-      CPEE::ModelManagement::fs_shift(models,new) # fallback
-    end
-    def self::git_commit(models,new,author)
-      rp = File.realpath(models)
-      crb = File.join(__dir__,'commit.rb')
-      system 'ruby ' + crb + ' ' + [rp, new, author].shelljoin + ' &'
-    end
+    def self::git_commit(models,files,author) #{{{
+      # commits files and their companions (also when moved or deleted) in the
+      # background, each in the repository it is in, if any. No shell: the
+      # author comes from the DN header
+      paths = files.compact.map do |f|
+        abs = File.join(File.realpath(File.dirname(File.join(models,f))),File.basename(f))
+        [abs, abs + '.active', abs + '.active-uuid', abs + '.attrs']
+      end.flatten.uniq
+      Thread.new do
+        GIT_LOCK.synchronize do
+          paths.group_by do |p|
+            top, status = Open3.capture2e('git','rev-parse','--show-toplevel',chdir: File.dirname(p))
+            status.success? ? top.strip : nil
+          end.each do |top,ps|
+            next if top.nil?
+            ps = ps.select{ |p| File.exist?(p) || !Open3.capture2e('git','ls-files','--',p,chdir: top)[0].strip.empty? } # git fails for paths it does not know
+            next if ps.empty?
+            Open3.capture2e('git','add','-A','--',*ps,chdir: top)
+            Open3.capture2e('git','-c','user.name=Christine Ashcreek','-c','user.email=dev@null.com','commit','-q','-m',author,'--',*ps,chdir: top)
+          end
+        end
+      rescue => e
+        warn 'git commit of ' + files.compact.join(', ') + ' failed: ' + e.message
+      end
+    end #}}}
     def self::fs_mv(models,old,new)
       fname = File.join(models,old)
       fnname = File.join(models,new)
@@ -81,14 +64,6 @@ module CPEE
       File.delete(fname + '.active',fnname + '.active') rescue nil
       File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
       FileUtils.mv(fname + '.attrs',fnname + '.attrs') rescue nil
-    end
-    def self::fs_cp(models,old,new)
-      fname = File.join(models,old)
-      fnname = File.join(models,new)
-      FileUtils.cp(fname,fnname)
-      File.delete(fname + '.active',fnname + '.active') rescue nil
-      File.delete(fname + '.active-uuid',fnname + '.active-uuid') rescue nil
-      FileUtils.cp(fname + '.attrs',fnname + '.attrs') rescue nil
     end
     def self::fs_rm(models,new)
       fname = File.join(models,new)
@@ -112,52 +87,13 @@ module CPEE
       puts "➡ Models directory #{models} is now a git repository"
     end #}}}
 
-    def self::git_dir(models,file)
-      return nil if file.nil?
-      cdir = Dir.pwd
-      tdir = File.dirname(file)
-      Dir.chdir(File.join(models,tdir))
-      res = `git rev-parse --absolute-git-dir 2>/dev/null`
-      Dir.chdir(cdir)
-      res == '' ? nil : res
-    end
-
     def self::op(author,op,models,new,old=nil) #{{{
-      git_ndir = CPEE::ModelManagement::git_dir(models,new)
-      git_odir = CPEE::ModelManagement::git_dir(models,old)
-
-      if op == 'rm' && !git_ndir.nil?
-        git_rm models, new
-        git_commit models, new, author
-      elsif op == 'shift' && !git_ndir.nil?
-        git_shift models, new
-        git_commit models, new, author
-      elsif op == 'mv' && (!git_ndir.nil? || !git_odir.nil?)
-        if git_ndir == git_odir
-          git_mv models, old, new
-          git_commit models, new, author
-        elsif git_ndir != git_odir && !git_ndir.nil? && !git_odir.nil?
-          fs_cp models, old, new
-          git_rm models, old
-          git_commit models, old, author
-          git_commit models, new, author
-        elsif git_ndir != git_odir && git_ndir.nil?
-          fs_cp models, old, new
-          git_rm models, old
-          git_commit models, old, author
-        elsif git_ndir != git_odir && git_odir.nil?
-          fs_mv models, old, new
-          git_commit models, new, author
-        end
-      elsif !git_ndir.nil?
-        git_commit models, new, author
-      else
-        case op
-          when 'mv'; fs_mv(models,old,new)
-          when 'rm'; fs_rm(models,new)
-          when 'shift'; fs_shift(models,new)
-        end
+      case op
+        when 'mv'; fs_mv(models,old,new)
+        when 'rm'; fs_rm(models,new)
+        when 'shift'; fs_shift(models,new)
       end
+      git_commit models, [new, old], author
     end #}}}
     def self::get_dn(dn) #{{{
       if dn
