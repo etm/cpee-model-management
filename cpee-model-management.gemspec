@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name             = "cpee-model-management"
-  s.version          = "1.2.12"
+  s.version          = "1.2.13"
   s.platform         = Gem::Platform::RUBY
   s.license          = "GPL-3.0-or-later"
   s.summary          = "(Lifecycle) manage your process models in a directory or git repo."
