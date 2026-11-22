@@ -25,8 +25,44 @@ function move_all() {
   });
   unmark_all();
 }
-function delete_all() {
-  if (confirm('Are you really, really, REALLY sure!')) {
+function dialogue(cls,target,text,action) {
+  // opens the dialogue at target, action is called by its button. text is the label of the item
+  let dlg = $('ui-dialogue.' + cls);
+  $('span.name',dlg).text(text);
+  uidash_dialogue(dlg,target);
+  dlg.off('click.action').on('click.action','button',() => action(dlg));
+  return dlg;
+}
+function plain(name) {
+  return name.replace(/\.xml$/,'').replace(/\.dir$/,'');
+}
+function ask_name(cls,name,target,send) {
+  // the dialogue asks for a new name (without extension), send gets it when it is ok
+  let ext = (name.match(/\.(xml|dir)$/) || [''])[0];
+  let dlg = dialogue(cls,target,plain(name),() => submit());
+  let inp = $('input',dlg);
+  inp.val(plain(name)).off('.name');
+  inp.on('input.name',() => inp[0].setCustomValidity(''));
+  inp.on('keydown.name',(e) => { if (e.key == 'Enter') { e.preventDefault(); submit(); } });
+  inp[0].setCustomValidity('');
+  inp.focus().select();
+  let submit = () => {
+    if (!inp[0].reportValidity()) { return; }
+    let nname = inp.val();
+    if (cls == 'rename' && nname + ext == name) { uidash_dialogue_close(dlg); return; }
+    if ($('#models td[data-class=name]').filter((i,e) => $(e).attr('data-full-name') == nname + ext).length > 0) {
+      inp[0].setCustomValidity(inp.attr('data-exists'));
+      inp[0].reportValidity();
+      return;
+    }
+    uidash_dialogue_close(dlg);
+    send(nname);
+  };
+}
+
+function delete_all(target) {
+  dialogue('deleteall',target,selections.length + (selections.length == 1 ? ' marked entry' : ' marked entries'),(dlg) => {
+    uidash_dialogue_close(dlg);
     selections.forEach((name) => {
       $.ajax({
         type: "DELETE",
@@ -34,7 +70,7 @@ function delete_all() {
       });
     });
     unmark_all();
-  }
+  });
 }
 function unmark_all() {
   selections = [];
@@ -66,25 +102,23 @@ function shift_it(name,to) {
     data: { stage: to }
   });
 }
-function rename_it(name) {
-  var newname;
-  if (newname = prompt('New name please!',name.replace(/\.xml$/,'').replace(/\.dir$/,''))) {
+function rename_it(name,target) {
+  ask_name('rename',name,target,(newname) => {
     $.ajax({
       type: "PUT",
       url: "server/" + gdir + name,
       data: { new: newname }
     });
-  }
+  });
 }
-function duplicate_it(name) {
-  var newname;
-  if (newname = prompt('New name please!',name.replace(/\.xml$/,'').replace(/\.dir$/,''))) {
+function duplicate_it(name,target) {
+  ask_name('duplicate',name,target,(newname) => {
     $.ajax({
       type: "PUT",
       url: "server/" + gdir + name,
       data: { dupdir: gdir, dupname: newname }
     });
-  }
+  });
 }
 function mark_it(tar) {
   tar.toggleClass('selected');
@@ -99,13 +133,14 @@ function mark_it(tar) {
     $('[data-class=special]').attr('class','invisible');
   }
 }
-function delete_it(name) {
-  if (confirm('Are you really, really, REALLY sure!')) {
+function delete_it(name,target) {
+  dialogue('delete',target,plain(name),(dlg) => {
+    uidash_dialogue_close(dlg);
     $.ajax({
       type: "DELETE",
       url: "server/" + gdir + name
     });
-  }
+  });
 }
 
 function moma_init() {
@@ -338,7 +373,7 @@ $(document).ready(function() {
         'function_call': delete_all,
         'text_icon': '<i class="uidash-icon uidash-icon-delete"></i>',
         'type': undefined,
-        'params': []
+        'params': [$(e.currentTarget)]
       },
       {
         'label': 'Unmarked all marked entries',
@@ -376,20 +411,21 @@ $(document).ready(function() {
     var name = $(e.currentTarget).closest('tr').find('td[data-class=name]').attr('data-full-name');
     var mark = $(e.currentTarget).closest('tr').find('td[data-class=model]');
     var is_model = mark.length > 0 ? true : false;
+    var target = $(e.currentTarget).closest('tr').find('td[data-class=ops]'); // where the dialogues open
     menu['Operations'] = [
       {
         'label': 'Delete',
         'function_call': delete_it,
         'text_icon': '<i class="uidash-icon uidash-icon-delete"></i>',
         'type': undefined,
-        'params': [name]
+        'params': [name,target]
       },
       {
         'label': 'Rename',
         'function_call': rename_it,
         'type': undefined,
         'text_icon': '<i class="uidash-icon uidash-icon-rename"></i>',
-        'params': [name]
+        'params': [name,target]
       }
     ];
     if (name.match(/\.xml$/)) {
@@ -399,7 +435,7 @@ $(document).ready(function() {
           'function_call': duplicate_it,
           'text_icon': '<i class="uidash-icon uidash-icon-copy"></i>',
           'type': undefined,
-          'params': [name]
+          'params': [name,target]
         }
       );
     }

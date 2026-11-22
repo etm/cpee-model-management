@@ -70,6 +70,12 @@ form input {
   width: 45em !important;
 }
 
+ui-dialogue { max-width: 30em; }
+[is="x-ui-"] ui-dialogue input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 ui-behind {
   text-transform: capitalize;
   font-weight: bold;

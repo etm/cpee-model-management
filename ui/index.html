@@ -31,8 +31,10 @@
 
     <script type="text/javascript" src="/js_libs/uidash.js"></script>
     <script type="text/javascript" src="/js_libs/uidash_custommenu.js"></script>
+    <script type="text/javascript" src="/js_libs/uidash_dialogue.js"></script>
 
     <link   rel="stylesheet"      href="/js_libs/uidash_custommenu.css" type="text/css"/>
+    <link   rel="stylesheet"      href="/js_libs/uidash_dialogue.css" type="text/css"/>
     <link   rel="stylesheet"      href="/js_libs/uidash.css" type="text/css"/>
 
     <link   rel="stylesheet"      href="/global_ui/ui.css" type="text/css"/>
@@ -232,5 +234,30 @@
         </ui-area>
       </ui-content>
     </ui-rest>
+
+    <ui-dialogue class="duplicate">
+      <p>
+        Duplicate "<span class="name"></span>". Only use characters, spaces,
+        underlines and dashes (no extension necessary).
+      </p>
+      <p><input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="New name (no extension necessary)." data-exists="This name already exists."/></p>
+      <button>duplicate</button>
+    </ui-dialogue>
+    <ui-dialogue class="rename">
+      <p>
+        Rename "<span class="name"></span>". Only use characters, spaces,
+        underlines and dashes (no extension necessary).
+      </p>
+      <p><input type="text" name="new" required pattern="^[a-zA-Z0-9öäüÖÄÜ _\-]+" placeholder="New name (no extension necessary)." data-exists="This name already exists."/></p>
+      <button>rename</button>
+    </ui-dialogue>
+    <ui-dialogue class="delete">
+      <p>Delete "<span class="name"></span>"?</p>
+      <button>delete</button>
+    </ui-dialogue>
+    <ui-dialogue class="deleteall">
+      <p>Delete all <span class="name"></span>?</p>
+      <button>delete</button>
+    </ui-dialogue>
   </body>
 </html>
