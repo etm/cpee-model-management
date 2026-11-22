@@ -158,7 +158,7 @@ function paint(pdir,gstage,statesave=true) {
       if (fp != fingerprint) {
         $('#models tbody').empty();
         fingerprint = fp;
-        let tempcont = $();
+        let tempcont = [];
         $(res).each(function(k,data) {
           if (data.type == 'dir') {
             let dp = gdir + data['name'] + '/';
@@ -214,7 +214,7 @@ function search(term) {
       $('#searchresults tbody').empty();
       const rank = (data) => data.type == 'dir' ? 0 : (data['name_match'] ? 1 : 2);
       res.sort((a,b) => rank(a) - rank(b));
-      let tempcont = $();
+      let tempcont = [];
       $(res).each(function(k,data) {
         let pdir = data['path'].replace(/[^\/]*$/,'');
         var clone = document.importNode(document.querySelector('#searchresult').content,true);
